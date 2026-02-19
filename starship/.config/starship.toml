@@ -1,0 +1,53 @@
+# starship.toml — KISS, Catppuccin Mocha palette
+
+"$schema" = 'https://starship.rs/config-schema.json'
+
+format = """
+[╭─](bold bright-black)$os$username$hostname$directory$git_branch$git_status$cmd_duration
+[╰─](bold bright-black)$character"""
+
+# ── Modules ───────────────────────────────────────────────────────────────────
+[os]
+disabled = false
+style = "bold blue"
+
+[os.symbols]
+Arch = " "
+
+[username]
+show_always = false
+style_user = "bold blue"
+format = "[$user]($style) "
+
+[hostname]
+ssh_only = true
+style = "bold yellow"
+format = "[@$hostname]($style) "
+
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = true
+format = "[$path]($style)[$read_only]($read_only_style) "
+
+[git_branch]
+style = "bold mauve"
+symbol = " "
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold red"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold yellow"
+format = "[⏱ $duration]($style) "
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+# ── Disabled ──────────────────────────────────────────────────────────────────
+[package]
+disabled = true
