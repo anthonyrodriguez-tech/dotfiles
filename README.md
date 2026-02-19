@@ -9,15 +9,14 @@
 | OS | Arch Linux |
 | DE | XFCE |
 | Terminal | Kitty |
-| Shell | Fish + Nushell |
+| Shell | Nushell |
 
 ## Stack logicielle
 
 | Outil | Rôle |
 |-------|------|
 | [kitty](https://sw.kovidgoyal.net/kitty/) | Terminal GPU-accelerated |
-| [fish](https://fishshell.com/) | Shell interactif principal |
-| [nushell](https://www.nushell.sh/) | Shell structuré (données en tableaux) |
+| [nushell](https://www.nushell.sh/) | Shell par défaut, données structurées |
 | [zoxide](https://github.com/ajeetdsouza/zoxide) | `cd` intelligent (remplace `cd`) |
 | [stow](https://www.gnu.org/software/stow/) | Gestion des symlinks dotfiles |
 | [JetBrains Mono Nerd Font](https://www.nerdfonts.com/) | Police terminal avec icônes |
@@ -29,9 +28,6 @@ dotfiles/
 ├── kitty/
 │   └── .config/kitty/
 │       └── kitty.conf          # Font + thème Catppuccin Mocha
-├── fish/
-│   └── .config/fish/
-│       └── config.fish         # Path, zoxide, aliases
 └── nushell/
     └── .config/nushell/
         ├── config.nu           # Settings, aliases
@@ -43,7 +39,7 @@ dotfiles/
 
 ```bash
 # 1. Installer les dépendances
-sudo pacman -S stow fish nushell kitty zoxide git
+sudo pacman -S stow nushell kitty zoxide git
 
 # 2. Installer JetBrains Nerd Font
 sudo pacman -S ttf-jetbrains-mono-nerd
@@ -51,7 +47,7 @@ sudo pacman -S ttf-jetbrains-mono-nerd
 # 3. Cloner et déployer
 git clone <repo> ~/dotfiles
 cd ~/dotfiles
-stow kitty fish nushell
+stow kitty nushell
 ```
 
 ## Ajouter un nouveau programme
