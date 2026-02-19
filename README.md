@@ -17,6 +17,7 @@
 |-------|------|
 | [kitty](https://sw.kovidgoyal.net/kitty/) | Terminal GPU-accelerated |
 | [nushell](https://www.nushell.sh/) | Shell par défaut, données structurées |
+| [starship](https://starship.rs/) | Prompt minimal et rapide |
 | [zoxide](https://github.com/ajeetdsouza/zoxide) | `cd` intelligent (remplace `cd`) |
 | [stow](https://www.gnu.org/software/stow/) | Gestion des symlinks dotfiles |
 | [JetBrains Mono Nerd Font](https://www.nerdfonts.com/) | Police terminal avec icônes |
@@ -28,11 +29,14 @@ dotfiles/
 ├── kitty/
 │   └── .config/kitty/
 │       └── kitty.conf          # Font + thème Catppuccin Mocha
-└── nushell/
-    └── .config/nushell/
-        ├── config.nu           # Settings, aliases
-        ├── env.nu              # PATH
-        └── zoxide.nu           # Généré par zoxide init nushell
+├── nushell/
+│   └── .config/nushell/
+│       ├── config.nu           # Settings, aliases, starship + zoxide
+│       ├── env.nu              # PATH, génère ~/.cache/starship/init.nu
+│       └── zoxide.nu           # Généré par zoxide init nushell
+└── starship/
+    └── .config/
+        └── starship.toml       # Prompt Catppuccin Mocha, icône Arch
 ```
 
 ## Déploiement (fresh install)
