@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : Lazygit — TUI git client config.
+# WHERE : home/dot_config/lazygit/config.yml
+# WHY   : Catppuccin Mocha theme to stay consistent with wezterm / starship /
+#         nvim, and delta as the diff pager so we get the same syntax-
+#         highlighted diffs whether we're in lazygit or `git diff` from
+#         the shell. Delta config lives in ~/.gitconfig (Phase 8) — here we
+#         only tell lazygit to invoke it.
+#
+# Notes:
+#   • The `lg` alias is set in zsh/aliases.zsh.
+#   • Delta must be on PATH; install via brew/scoop/pacman in bootstrap.
+#   • `colorArg: always` is required, otherwise delta receives no color codes.
+# ─────────────────────────────────────────────────────────────────────────
+
+gui:
+  # Catppuccin Mocha — colors mirror wezterm/appearance.lua.
+  theme:
+    activeBorderColor:
+      - "#89b4fa" # blue
+      - bold
+    inactiveBorderColor:
+      - "#a6adc8" # subtext0
+    searchingActiveBorderColor:
+      - "#f9e2af" # yellow
+      - bold
+    optionsTextColor:
+      - "#89b4fa" # blue
+    selectedLineBgColor:
+      - "#45475a" # surface1
+    selectedRangeBgColor:
+      - "#45475a" # surface1
+    cherryPickedCommitBgColor:
+      - "#45475a" # surface1
+    cherryPickedCommitFgColor:
+      - "#f5c2e7" # pink
+    unstagedChangesColor:
+      - "#f38ba8" # red
+    defaultFgColor:
+      - "#cdd6f4" # text
+  # Layout tweaks — sane defaults, slightly larger commit message limit.
+  showFileTree: true
+  showCommandLog: false
+  showBottomLine: true
+  nerdFontsVersion: "3"
+  commitLength:
+    show: true
+  mouseEvents: true
+
+git:
+  pagers:
+    - colorArg: always
+      # Delta is configured in ~/.gitconfig; --paging=never lets lazygit
+      # control scrolling instead of delta spawning its own pager.
+      pager: delta --paging=never
+  commit:
+    signOff: false
+  merging:
+    # Use --no-ff for explicit merge commits — keeps history readable
+    # when we want a topic-branch trail, and is harmless when ff is fine.
+    manualCommit: false
+    args: ""
+  log:
+    # `topo-order` gives a more intuitive graph than the default
+    # `date-order` when branches are interleaved.
+    order: "topo-order"
+    showGraph: "always"
+  skipHookPrefix: WIP
+  autoFetch: true
+  autoRefresh: true
+
+# Disable the "new version available" nag — chezmoi/Scoop/brew handle updates.
+update:
+  method: never
+
+# Confirm on quit only if there are pending operations (rebase, etc.).
+confirmOnQuit: false
+quitOnTopLevelReturn: false
+
+# Custom keybindings: keep lazygit defaults, just add a couple of muscle-
+# memory shortcuts. `<c-r>` reloads, matches our wezterm leader-R.
+keybinding:
+  universal:
+    quit: "q"
+    return: "<esc>"
+    togglePanel: "<tab>"
+  files:
+    # `a` already toggles staged/unstaged for the file under cursor;
+    # add `A` to stage *all* tracked changes (default is `a` then `A`).
+    commitChangesWithEditor: "C"
