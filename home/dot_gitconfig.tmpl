@@ -1,0 +1,136 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : git config, templated per machine by chezmoi.
+# WHERE : home/dot_gitconfig.tmpl  →  ~/.gitconfig
+# WHY   : one file for all OSes; identity + delta pager + sensible defaults.
+#         Work email / GPG / anything machine-specific goes in
+#         ~/.gitconfig.local (included at the bottom, never tracked).
+#         Emails for repos under ~/work/ get overridden by the includeIf
+#         section — the home office laptops (geneva / safran) typically
+#         clone corporate repos there.
+#
+# autocrlf:
+#   • Windows native → `true`   (CRLF on checkout, LF in the repo).
+#   • macOS / Linux  → `input`  (never modify on checkout, LF on commit).
+#   • MSYS2 on Windows reports .chezmoi.os = "windows" to chezmoi, which
+#     is the behaviour we want since git.exe is the native build anyway.
+# ─────────────────────────────────────────────────────────────────────────
+
+[user]
+    name  = {{ .name  | quote }}
+    email = {{ .email | quote }}
+
+[core]
+    editor    = nvim
+    pager     = delta
+{{- if eq .chezmoi.os "windows" }}
+    autocrlf  = true
+    longpaths = true
+{{- else }}
+    autocrlf  = input
+{{- end }}
+    excludesFile = ~/.gitignore_global
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[push]
+    autoSetupRemote = true
+    default = current
+
+[fetch]
+    prune = true
+    pruneTags = true
+
+[rebase]
+    autoStash   = true
+    autoSquash  = true
+
+[merge]
+    conflictStyle = zdiff3
+    ff            = only
+
+[rerere]
+    enabled = true
+
+[diff]
+    colorMoved = default
+    algorithm  = histogram
+    # Delta expects this so it can render hunk headers correctly.
+    mnemonicPrefix = true
+
+[interactive]
+    diffFilter = delta --color-only
+
+# ─────────────────────────────────────────────────────────────────────────
+# Delta — syntax-highlighted diffs, Catppuccin Mocha palette to match the
+# rest of the stack (wezterm, starship, nvim, lazygit).
+# ─────────────────────────────────────────────────────────────────────────
+[delta]
+    features       = catppuccin-mocha
+    navigate       = true
+    line-numbers   = true
+    side-by-side   = false
+    hyperlinks     = true
+    syntax-theme   = base16
+
+[delta "catppuccin-mocha"]
+    minus-style                   = "syntax #45293a"
+    minus-emph-style              = "syntax #7d3c5a"
+    minus-empty-line-marker-style = "syntax #45293a"
+    plus-style                    = "syntax #283c3f"
+    plus-emph-style               = "syntax #3e5e62"
+    plus-empty-line-marker-style  = "syntax #283c3f"
+    line-numbers-minus-style      = "#f38ba8"
+    line-numbers-plus-style       = "#a6e3a1"
+    line-numbers-zero-style       = "#6c7086"
+    line-numbers-left-style       = "#585b70"
+    line-numbers-right-style      = "#585b70"
+    file-style                    = "#cdd6f4" bold
+    file-decoration-style         = "#45475a" ul
+    hunk-header-decoration-style  = "#45475a" box
+    hunk-header-style             = "#89b4fa" bold
+
+# ─────────────────────────────────────────────────────────────────────────
+# Aliases — the short ones match the zsh aliases so muscle memory works
+# whether we type `gs` in zsh or `git s` from inside a subshell.
+# ─────────────────────────────────────────────────────────────────────────
+[alias]
+    s       = status -sb
+    co      = checkout
+    sw      = switch
+    br      = branch
+    ci      = commit
+    a       = add
+    ap      = add --patch
+    cp      = cherry-pick
+    d       = diff
+    dc      = diff --cached
+    lg      = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)'
+    last    = log -1 HEAD --stat
+    # One-shot resync of the current branch with its upstream (and prune).
+    sync    = !git fetch --all --prune && git pull --rebase --autostash
+    # Undo last commit but keep changes staged.
+    undo    = reset --soft HEAD~1
+    # Hard-reset to upstream (DANGER: discards local commits).
+    nuke    = !git reset --hard "@{upstream}"
+    # Delete every local branch already merged into main/master.
+    cleanup = !git branch --merged | grep -v -E '^(\\*| +(main|master)$)' | xargs -r git branch -d
+    # Staged-only diff piped through delta (works even inside `git log`).
+    dcp     = diff --cached --stat
+    # Quick amend-no-edit for fixing the previous commit message/content.
+    fix     = commit --amend --no-edit
+
+# ─────────────────────────────────────────────────────────────────────────
+# Conditional includes.
+#   • ~/work/    → pro repos: override [user] email with work identity.
+#   • ~/.gitconfig.local is always read last, so it wins over everything
+#     above (useful for host-specific GPG key, commit signing, etc.).
+# ─────────────────────────────────────────────────────────────────────────
+[includeIf "gitdir:~/work/"]
+    path = ~/.gitconfig.work
+
+[include]
+    path = ~/.gitconfig.local

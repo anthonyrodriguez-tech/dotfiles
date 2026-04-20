@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : global .gitignore — applied to every repo on this machine.
+# WHERE : home/dot_gitignore_global  →  ~/.gitignore_global
+# WHY   : keep OS / editor / tooling cruft out of every repo without
+#         requiring each project to duplicate these rules.
+#         Referenced from ~/.gitconfig → [core] excludesFile.
+# ─────────────────────────────────────────────────────────────────────────
+
+# ── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Editors ───────────────────────────────────────────────────────────────
+# Vim / Neovim
+*.swp
+*.swo
+*.swn
+Session.vim
+.netrwhist
+tags
+# Emacs
+*~
+\#*\#
+.\#*
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+# VS Code (keep .vscode/ for projects that want to share settings)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# ── Shell / env ───────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.direnv/
+.envrc.local
+
+# ── Build / tooling ───────────────────────────────────────────────────────
+# Node
+node_modules/
+.pnpm-store/
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+# .NET
+bin/
+obj/
+*.user
+# Rust
+target/
+# Go
+# (don't ignore repo-level `pkg/` — it's a real source dir in most Go projects)
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+# .terraform.lock.hcl is intentionally NOT ignored — it's a provider lock
+# file that should be committed, same idea as package-lock.json.
+
+# ── Misc ──────────────────────────────────────────────────────────────────
+*.log
+*.bak
+*.tmp
+*.orig
+*.rej
+.cache/
