@@ -54,12 +54,16 @@ curl -fsSL https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootst
 irm https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootstrap-windows.ps1 | iex
 ```
 
-> ⚠ Phase 0 — bootstrap scripts are placeholders. They land in **Phase 9**.
-> Until then, install [chezmoi](https://www.chezmoi.io/install/) manually and run:
->
-> ```sh
-> chezmoi init --apply https://github.com/<USER>/dotfiles.git
-> ```
+Each bootstrap script is **idempotent** (re-run safely) and needs no admin
+rights — macOS uses Homebrew, Linux uses the native package manager (apt /
+dnf / pacman auto-detected), Windows uses Scoop + MSYS2 under `%USERPROFILE%`.
+
+If you prefer to skip the bootstrap and just wire up dotfiles into an
+already-prepared system:
+
+```sh
+chezmoi init --apply https://github.com/<USER>/dotfiles.git
+```
 
 ### Post-install — Claude Code
 
