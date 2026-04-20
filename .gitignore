@@ -1,0 +1,41 @@
+# ─── OS cruft ─────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Editor / IDE swap files ──────────────────────────────────────────────
+*.swp
+*.swo
+*.swn
+*~
+.*.sw?
+*.bak
+*.tmp
+.vscode/
+.idea/
+
+# ─── chezmoi local state (never commit applied state) ─────────────────────
+# chezmoi's state/cache lives in the target machine's $XDG_DATA_HOME.
+# We only guard against accidental drops of `chezmoi dump` outputs here.
+chezmoi-dump.*
+chezmoi-state.*
+
+# ─── Secrets / local overrides (should never reach this repo) ─────────────
+*.local
+*.local.zsh
+.env
+.env.*
+!.env.example
+secrets.yaml
+age.key
+*.pem
+*.key
+
+# ─── Build artefacts from tooling we might run from the repo root ─────────
+node_modules/
+.direnv/
+.cache/
