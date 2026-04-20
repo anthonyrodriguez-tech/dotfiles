@@ -1,0 +1,27 @@
+{{/*
+  ─────────────────────────────────────────────────────────────────────────
+  WHAT  : files inside the chezmoi source tree that should NOT be applied
+          to the target ($HOME).
+  WHERE : home/.chezmoiignore  (one of chezmoi's special source files)
+  WHY   :
+    * .gitkeep stubs only exist so empty leaf dirs survive in git; they
+      must never land in $HOME.
+    * The defensive entries (README.md, LICENSE, ...) cover the case where
+      someone drops one of those files inside home/ by mistake — chezmoi's
+      source dir is `home/`, so anything at the *repo* root is naturally
+      out of scope already.
+  ─────────────────────────────────────────────────────────────────────────
+*/ -}}
+
+# Empty-dir markers — kept in git, never apply to $HOME.
+**/.gitkeep
+
+# Defensive: anything below would leak documentation/build cruft into $HOME
+# if it ever ended up inside home/.
+README.md
+README.*
+LICENSE
+LICENSE.*
+PLAN.md
+docs
+scripts

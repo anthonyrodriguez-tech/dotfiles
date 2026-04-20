@@ -1,0 +1,22 @@
+{{/*
+  ─────────────────────────────────────────────────────────────────────────
+  WHAT  : chezmoi config template, materialised on `chezmoi init` into
+          $XDG_CONFIG_HOME/chezmoi/chezmoi.toml on the target machine.
+  WHERE : home/.chezmoi.toml.tmpl  →  ~/.config/chezmoi/chezmoi.toml
+  WHY   : centralises the per-machine prompts so every other template can
+          read .email / .name / .profile without re-asking the user.
+
+  Prompts use the `*Once` variants: chezmoi only asks if the value is
+  missing, so re-running `chezmoi init` on an already-provisioned machine
+  is silent and idempotent.
+  ─────────────────────────────────────────────────────────────────────────
+*/ -}}
+
+{{- $email   := promptStringOnce . "email"   "Email address" -}}
+{{- $name    := promptStringOnce . "name"    "Full name" -}}
+{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "safran" "geneva" "homelab") -}}
+
+[data]
+    email   = {{ $email   | quote }}
+    name    = {{ $name    | quote }}
+    profile = {{ $profile | quote }}
