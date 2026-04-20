@@ -1,0 +1,17 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT  : ~/.zshenv — sourced by EVERY zsh invocation (login, interactive,
+#         non-interactive scripts, su -c '…'). Keep it tiny and side-effect-free.
+# WHERE : home/dot_zshenv  →  ~/.zshenv
+# WHY   : zsh looks for .zshrc in $ZDOTDIR (default $HOME). Setting ZDOTDIR
+#         here lets us keep the real config under $XDG_CONFIG_HOME/zsh/, so
+#         $HOME stays clean across all three machines.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# XDG base directories — defaults from the spec.
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# Tell zsh where to find .zshrc and friends.
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"

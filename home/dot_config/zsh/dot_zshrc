@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WHAT  : ~/.config/zsh/.zshrc — interactive-shell entry point. Detects OS,
+#         then sources each module in a deterministic order.
+# WHERE : home/dot_config/zsh/dot_zshrc  →  ~/.config/zsh/.zshrc
+#         (chezmoi resolves dot_zshrc → .zshrc; ZDOTDIR set in ~/.zshenv
+#          tells zsh to look here.)
+# WHY   : One ordered loop is easier to reason about than a chain of
+#         per-module side-effects. Adding a module = drop a file + add it
+#         to the list below.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# OS triage — every module can branch on $DOTFILES_OS without re-running uname.
+case "$(uname -s)" in
+    Darwin)               export DOTFILES_OS=mac ;;
+    Linux)                export DOTFILES_OS=linux ;;
+    MINGW*|MSYS*|CYGWIN*) export DOTFILES_OS=windows ;;
+    *)                    export DOTFILES_OS=unknown ;;
+esac
+
+# Source modules in dependency order. Notes on ordering:
+#   • options   first so later modules get the right glob/word semantics.
+#   • path      before plugins so brew/mise are on $PATH when zinit needs git.
+#   • completion before plugins (sets ZSH_COMPDUMP + zstyles only — compinit
+#                itself fires inside plugins.zsh once zsh-completions is in fpath).
+#   • plugins   does compinit + loads fzf-tab / autosuggestions / syntax-highlighting.
+#   • keybinds  after plugins so we can override widgets they install.
+#   • integrations last (starship/fzf hook into the prompt and key bindings).
+local _zsh_modules=(
+    options
+    env
+    history
+    path
+    completion
+    plugins
+    keybinds
+    aliases
+    functions
+    integrations
+)
+
+for _mod in "${_zsh_modules[@]}"; do
+    local _f="$ZDOTDIR/$_mod.zsh"
+    [[ -r "$_f" ]] && source "$_f"
+done
+unset _mod _f _zsh_modules
+
+# Per-machine overrides — never tracked in this repo. Drop anything bespoke
+# (proxy vars, work-only aliases, experimental config) here.
+[[ -r "$ZDOTDIR/local.zsh" ]] && source "$ZDOTDIR/local.zsh"
