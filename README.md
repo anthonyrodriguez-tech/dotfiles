@@ -61,6 +61,18 @@ irm https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootstrap-win
 > chezmoi init --apply https://github.com/<USER>/dotfiles.git
 > ```
 
+### Post-install — Claude Code
+
+After the first `chezmoi apply`, the Claude Code settings / agents / global CLAUDE.md
+land in `~/.claude/`. Sign in once from any terminal:
+
+```sh
+claude auth login
+```
+
+Subsequent `chezmoi apply` runs will not overwrite the auth token — it lives in
+`~/.claude/.credentials.json` which is not managed by chezmoi.
+
 ## Update
 
 ```sh

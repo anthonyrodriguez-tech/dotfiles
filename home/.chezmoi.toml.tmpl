@@ -16,7 +16,20 @@
 {{- $name    := promptStringOnce . "name"    "Full name" -}}
 {{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "safran" "geneva" "homelab") -}}
 
+{{/* Corporate-profile-only extras — resolved here so the rest of the
+     source tree can reference static `.proxy_http` etc. without having to
+     call prompt* helpers from inside every template (prompt* is only
+     available during `chezmoi init`). */ -}}
+{{- $proxyHttp  := "" -}}
+{{- $proxyHttps := "" -}}
+{{- if eq $profile "safran" -}}
+  {{- $proxyHttp  = promptStringOnce . "proxy_http"  "HTTP proxy URL (blank if none)"  "" -}}
+  {{- $proxyHttps = promptStringOnce . "proxy_https" "HTTPS proxy URL (blank if none)" "" -}}
+{{- end -}}
+
 [data]
-    email   = {{ $email   | quote }}
-    name    = {{ $name    | quote }}
-    profile = {{ $profile | quote }}
+    email       = {{ $email      | quote }}
+    name        = {{ $name       | quote }}
+    profile     = {{ $profile    | quote }}
+    proxy_http  = {{ $proxyHttp  | quote }}
+    proxy_https = {{ $proxyHttps | quote }}

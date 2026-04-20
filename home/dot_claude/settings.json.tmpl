@@ -1,0 +1,50 @@
+{
+  "_comment_what":  "Claude Code user settings. See https://docs.claude.com/en/docs/claude-code/settings",
+  "_comment_where": "home/dot_claude/settings.json.tmpl  →  ~/.claude/settings.json",
+  "_comment_why":   "Templated by chezmoi: corporate (safran) tightens permissions and may need proxy env. Personal/geneva/homelab keep defaults. Edit project-scoped settings under .claude/settings.json in each repo, not here.",
+
+  "includeCoAuthoredBy": true,
+  "cleanupPeriodDays": 30,
+  "model": "claude-sonnet-4-6",
+
+  "env": {
+    "EDITOR": "nvim",
+    "BAT_THEME": "Catppuccin Mocha"
+{{- if eq .profile "safran" }},
+    "_comment_proxy": "Corporate proxy — values prompted during `chezmoi init` and stored as .proxy_http / .proxy_https in chezmoi data.",
+    "HTTP_PROXY":  {{ .proxy_http  | quote }},
+    "HTTPS_PROXY": {{ .proxy_https | quote }},
+    "NO_PROXY":    "localhost,127.0.0.1,.safran-group.com"
+{{- end }}
+  },
+
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(fd:*)",
+      "Bash(eza:*)"
+    ],
+    "deny": [
+{{- if eq .profile "safran" }}
+      "WebFetch",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(npm publish:*)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)"
+{{- else }}
+      "Bash(rm -rf /:*)",
+      "Bash(sudo rm:*)"
+{{- end }}
+    ]
+  }
+}
