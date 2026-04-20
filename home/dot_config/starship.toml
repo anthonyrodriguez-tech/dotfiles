@@ -1,0 +1,129 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : Starship prompt — DevOps-oriented, two-line, Catppuccin Mocha.
+# WHERE : home/dot_config/starship.toml  →  ~/.config/starship.toml
+# WHY   : One prompt across all three machines, and across zsh / bash /
+#         pwsh on Safran. Modules surface the contexts that matter for
+#         this stack: k8s, AWS, Azure, Terraform, .NET, plus standard
+#         language versions. Cross-cuts `bat`, `lazygit`, wezterm scheme.
+#
+# Glyphs assume JetBrainsMono Nerd Font (set up in Phase 3 / Phase 9).
+# ─────────────────────────────────────────────────────────────────────────
+
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Two-line prompt: line 1 carries every context, line 2 is just the
+# character — keeps long paths from pushing the cursor off-screen.
+format = """
+$directory\
+$git_branch\
+$git_status\
+$kubernetes\
+$aws\
+$azure\
+$terraform\
+$dotnet\
+$nodejs\
+$python\
+$golang\
+$rust\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true   # blank line between commands; easier to scan
+palette     = "catppuccin_mocha"
+
+# ── Catppuccin Mocha palette ─────────────────────────────────────────────
+# Hex values from https://github.com/catppuccin/palette (v1.7.1).
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo  = "#f2cdcd"
+pink      = "#f5c2e7"
+mauve     = "#cba6f7"
+red       = "#f38ba8"
+maroon    = "#eba0ac"
+peach     = "#fab387"
+yellow    = "#f9e2af"
+green     = "#a6e3a1"
+teal      = "#94e2d5"
+sky       = "#89dceb"
+sapphire  = "#74c7ec"
+blue      = "#89b4fa"
+lavender  = "#b4befe"
+text      = "#cdd6f4"
+subtext1  = "#bac2de"
+subtext0  = "#a6adc8"
+overlay2  = "#9399b2"
+overlay1  = "#7f849c"
+overlay0  = "#6c7086"
+surface2  = "#585b70"
+surface1  = "#45475a"
+surface0  = "#313244"
+base      = "#1e1e2e"
+mantle    = "#181825"
+crust     = "#11111b"
+
+# ── Path ─────────────────────────────────────────────────────────────────
+[directory]
+home_symbol       = "~"
+truncation_length = 3
+truncation_symbol = "…/"
+truncate_to_repo  = true
+style             = "bold blue"
+read_only         = " 󰌾"
+
+# ── Git ──────────────────────────────────────────────────────────────────
+[git_branch]
+style = "bold mauve"
+
+[git_status]
+style = "bold red"
+
+# ── Command duration ─────────────────────────────────────────────────────
+[cmd_duration]
+min_time = 2000      # ms — only show when it actually mattered
+style    = "bold yellow"
+
+# ── Cloud / orchestrators ────────────────────────────────────────────────
+# kubernetes is disabled by default upstream — flip it on; format keeps
+# the namespace inline so we don't burn a whole module slot for it.
+[kubernetes]
+disabled = false
+style    = "bold sapphire"
+format   = '[$symbol$context( \($namespace\))]($style) '
+
+# AWS is on by default but only shows when AWS_PROFILE / AWS_REGION are set.
+[aws]
+style = "bold peach"
+
+# Azure is off by default; enable for `az login` sessions.
+[azure]
+disabled = false
+style    = "bold blue"
+
+[terraform]
+style = "bold lavender"
+
+# ── Languages (contextual: only show when project uses them) ─────────────
+# Heuristics are upstream defaults: .csproj/.sln (dotnet), package.json
+# (nodejs), go.mod (golang), Cargo.toml (rust), etc.
+[dotnet]
+style = "bold mauve"
+
+[nodejs]
+style = "bold green"
+
+[python]
+style = "bold yellow"
+
+[golang]
+style = "bold sky"
+
+[rust]
+style = "bold peach"
+
+# ── Prompt character ─────────────────────────────────────────────────────
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol   = "[❯](bold red)"
+vimcmd_symbol  = "[❮](bold green)"
