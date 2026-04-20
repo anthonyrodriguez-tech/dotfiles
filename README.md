@@ -124,8 +124,8 @@ Local non-tracked overrides:
 
 ## Documentation
 
-- [`PLAN.md`](./PLAN.md) — phased implementation plan
-- `docs/decisions.md` — architecture decision records (Phase 10)
-- `docs/cheatsheet.md` — keybindings reference (Phase 10)
-- `docs/troubleshooting.md` — common issues (Phase 10)
-- `docs/migration-to-ghostty.md` — future migration plan (Phase 10)
+- [`docs/cheatsheet.md`](./docs/cheatsheet.md) — WezTerm / Neovim / Lazygit / zsh keybindings and aliases
+- [`docs/troubleshooting.md`](./docs/troubleshooting.md) — clipboard, MSYS2 quirks, chezmoi prompt gotchas
+- [`docs/decisions.md`](./docs/decisions.md) — architecture decision records (ADR-001 through ADR-006)
+- [`docs/migration-to-ghostty.md`](./docs/migration-to-ghostty.md) — planned WezTerm → Ghostty port
+- [`PLAN.md`](./PLAN.md) — phased implementation plan (historical)
