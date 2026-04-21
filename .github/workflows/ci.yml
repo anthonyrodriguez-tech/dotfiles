@@ -72,6 +72,57 @@ jobs:
       - name: luacheck
         run: luacheck home/dot_config/nvim/lua home/dot_config/wezterm
 
+  # ── actionlint: own workflow YAML stays healthy ───────────────────────
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+
+  # ── neovim headless smoke: lazy.nvim installs, no startup errors ──────
+  # Ubuntu ships an old nvim; LazyVim requires 0.10+. Pull the upstream
+  # AppImage-extracted binary instead.
+  nvim:
+    name: neovim headless
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install neovim (upstream stable)
+        run: |
+          curl -fsSL -o /tmp/nvim.tar.gz \
+            https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.tar.gz
+          mkdir -p "$HOME/.local/nvim"
+          tar -xzf /tmp/nvim.tar.gz -C "$HOME/.local/nvim" --strip-components=1
+          echo "$HOME/.local/nvim/bin" >> "$GITHUB_PATH"
+
+      - name: Link nvim config
+        run: |
+          mkdir -p "$HOME/.config"
+          ln -s "$PWD/home/dot_config/nvim" "$HOME/.config/nvim"
+
+      - name: Install plugins (Lazy! sync)
+        run: |
+          # First run bootstraps lazy.nvim + clones/builds all plugins.
+          # Treesitter parsers compile here — stderr noise is expected,
+          # so we only enforce a non-zero exit code.
+          nvim --headless "+Lazy! sync" +qa
+
+      - name: Startup smoke (clean load after sync)
+        run: |
+          # Second run: config should load silently. Any stderr output now
+          # means a Lua error that slipped past plugin install.
+          nvim --headless +qa 2> /tmp/nvim.err
+          if [ -s /tmp/nvim.err ]; then
+              echo "::error::nvim wrote to stderr on clean startup:"
+              cat /tmp/nvim.err
+              exit 1
+          fi
+          echo "neovim headless smoke: OK"
+
   # ── chezmoi: templates render for every profile ───────────────────────
   chezmoi:
     name: chezmoi dry-run (all profiles)

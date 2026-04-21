@@ -29,7 +29,7 @@
 | AI in terminal | Claude Code |
 | Package manager | brew (mac) · apt/dnf/pacman (linux) · Scoop (windows, user-level) |
 
-See [`PLAN.md`](./PLAN.md) for the full implementation plan and rationale.
+See [`docs/plan-history.md`](./docs/plan-history.md) for the full implementation plan and rationale.
 
 ## Install
 
@@ -102,8 +102,7 @@ dotfiles/
 │   ├── dot_gitconfig.tmpl   → ~/.gitconfig (templated identity)
 │   └── dot_local/bin/       portable scripts on $PATH
 ├── scripts/                 bootstrap-{mac,linux,windows}, not chezmoi-managed
-├── docs/                    ADRs, cheatsheets, troubleshooting
-└── PLAN.md                  implementation roadmap (phases 0–11)
+└── docs/                    ADRs, cheatsheets, troubleshooting, plan history
 ```
 
 ## Per-machine profiles
@@ -123,8 +122,9 @@ Local non-tracked overrides:
 
 ## Documentation
 
+- [`docs/install.md`](./docs/install.md) — what the bootstrap installs, manual steps, verification
 - [`docs/cheatsheet.md`](./docs/cheatsheet.md) — WezTerm / Neovim / Lazygit / zsh keybindings and aliases
 - [`docs/troubleshooting.md`](./docs/troubleshooting.md) — clipboard, MSYS2 quirks, chezmoi prompt gotchas
 - [`docs/decisions.md`](./docs/decisions.md) — architecture decision records (ADR-001 through ADR-006)
 - [`docs/migration-to-ghostty.md`](./docs/migration-to-ghostty.md) — planned WezTerm → Ghostty port
-- [`PLAN.md`](./PLAN.md) — phased implementation plan (historical)
+- [`docs/plan-history.md`](./docs/plan-history.md) — phased implementation plan (historical)

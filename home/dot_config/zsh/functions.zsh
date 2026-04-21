@@ -15,11 +15,16 @@ mkcd() {
 # ── fkill: fuzzy-pick a process and send it a signal (default TERM) ───────
 #   fkill           → SIGTERM
 #   fkill 9         → SIGKILL
+# MSYS2 `ps` has no `-ef` (pid is $1); elsewhere pid is $2 under `ps -ef`.
 fkill() {
     command -v fzf >/dev/null 2>&1 || { print -u2 "fkill: fzf required"; return 1; }
     local sig="${1:-15}"
     local pids
-    pids=$(ps -ef | sed 1d | fzf -m --header="kill -$sig (TAB to multi-select)" | awk '{print $2}')
+    if [[ "${DOTFILES_OS:-}" == "windows" ]]; then
+        pids=$(ps | sed 1d | fzf -m --header="kill -$sig (TAB to multi-select)" | awk '{print $1}')
+    else
+        pids=$(ps -ef | sed 1d | fzf -m --header="kill -$sig (TAB to multi-select)" | awk '{print $2}')
+    fi
     [[ -z "$pids" ]] && return 0
     print -- "$pids" | xargs -r kill -"$sig"
 }
