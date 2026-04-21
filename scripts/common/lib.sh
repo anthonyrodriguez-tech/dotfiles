@@ -31,7 +31,7 @@ log::warn() { printf '%s  ! %s%s\n' "${_C_YELLOW}" "$*" "${_C_RESET}" >&2; }
 log::err() { printf '%s  ✗ %s%s\n' "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
 
 # has_cmd <name> — 0 if in PATH, 1 otherwise.
-has_cmd() { command -v "$1" > /dev/null 2>&1; }
+has_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 # require <name> <hint> — fail fast if a prerequisite is missing.
 require() {
@@ -48,8 +48,8 @@ chezmoi_bootstrap() {
     local repo="$1"
     require chezmoi "install chezmoi via brew / apt / scoop / pacman first"
 
-    if [ -d "${HOME}/.local/share/chezmoi" ] \
-        || [ -d "${HOME}/.config/chezmoi" ]; then
+    if [ -d "${HOME}/.local/share/chezmoi" ] ||
+        [ -d "${HOME}/.config/chezmoi" ]; then
         log::step "chezmoi already initialised — running apply"
         chezmoi apply --verbose
     else

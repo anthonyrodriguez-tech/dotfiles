@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2> /dev/null && pwd || echo "")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 if [ -n "${SCRIPT_DIR}" ] && [ -f "${SCRIPT_DIR}/common/lib.sh" ]; then
     # shellcheck source=scripts/common/lib.sh
     . "${SCRIPT_DIR}/common/lib.sh"
@@ -39,9 +39,12 @@ fi
 
 # ── Detect package manager ────────────────────────────────────────────────
 PM=""
-if has_cmd apt-get; then PM="apt"
-elif has_cmd dnf; then PM="dnf"
-elif has_cmd pacman; then PM="pacman"
+if has_cmd apt-get; then
+    PM="apt"
+elif has_cmd dnf; then
+    PM="dnf"
+elif has_cmd pacman; then
+    PM="pacman"
 else
     log::err "no supported package manager found (apt/dnf/pacman)"
     exit 1
@@ -58,31 +61,31 @@ fi
 # actually ship. Missing / differently-named ones are installed by fallback
 # below (starship via install.sh, atuin via installer, wezterm via AppImage).
 case "${PM}" in
-    apt)
-        ${SUDO} apt-get update
-        ${SUDO} apt-get install -y --no-install-recommends \
-            zsh git curl ca-certificates build-essential unzip \
-            ripgrep fd-find bat neovim tmux jq \
-            fzf zoxide
-        # Debian names `fd` binary `fdfind` — symlink into ~/.local/bin.
-        if ! has_cmd fd && has_cmd fdfind; then
-            mkdir -p "${HOME}/.local/bin"
-            ln -sf "$(command -v fdfind)" "${HOME}/.local/bin/fd"
-        fi
-        ;;
-    dnf)
-        ${SUDO} dnf install -y \
-            zsh git curl ca-certificates @development-tools unzip \
-            ripgrep fd-find bat neovim tmux jq \
-            fzf zoxide eza
-        ;;
-    pacman)
-        ${SUDO} pacman -Sy --needed --noconfirm \
-            zsh git curl base-devel unzip \
-            ripgrep fd bat neovim tmux jq yq \
-            fzf zoxide eza starship atuin mise \
-            chezmoi lazygit git-delta github-cli ttf-jetbrains-mono-nerd
-        ;;
+apt)
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y --no-install-recommends \
+        zsh git curl ca-certificates build-essential unzip \
+        ripgrep fd-find bat neovim tmux jq \
+        fzf zoxide
+    # Debian names `fd` binary `fdfind` — symlink into ~/.local/bin.
+    if ! has_cmd fd && has_cmd fdfind; then
+        mkdir -p "${HOME}/.local/bin"
+        ln -sf "$(command -v fdfind)" "${HOME}/.local/bin/fd"
+    fi
+    ;;
+dnf)
+    ${SUDO} dnf install -y \
+        zsh git curl ca-certificates @development-tools unzip \
+        ripgrep fd-find bat neovim tmux jq \
+        fzf zoxide eza
+    ;;
+pacman)
+    ${SUDO} pacman -Sy --needed --noconfirm \
+        zsh git curl base-devel unzip \
+        ripgrep fd bat neovim tmux jq yq \
+        fzf zoxide eza starship atuin mise \
+        chezmoi lazygit git-delta github-cli ttf-jetbrains-mono-nerd
+    ;;
 esac
 
 # ── Tools that are flaky / missing in distro repos: install via upstream ──
@@ -100,8 +103,8 @@ fi
 # starship — needs curl installer on apt/dnf (not packaged on older distros).
 if ! has_cmd starship; then
     log::step "starship (upstream installer)"
-    curl -fsSL https://starship.rs/install.sh \
-        | sh -s -- --yes --bin-dir "${HOME}/.local/bin"
+    curl -fsSL https://starship.rs/install.sh |
+        sh -s -- --yes --bin-dir "${HOME}/.local/bin"
 fi
 
 # mise — single-binary install for apt/dnf (pacman already handled it).
@@ -136,7 +139,7 @@ log::step "Default shell"
 ZSH_PATH="$(command -v zsh || true)"
 if [ -n "${ZSH_PATH}" ] && [ "${SHELL:-}" != "${ZSH_PATH}" ]; then
     if [ -n "${SUDO}" ] && ! grep -q "^${ZSH_PATH}$" /etc/shells; then
-        echo "${ZSH_PATH}" | ${SUDO} tee -a /etc/shells > /dev/null
+        echo "${ZSH_PATH}" | ${SUDO} tee -a /etc/shells >/dev/null
     fi
     chsh -s "${ZSH_PATH}" || log::warn "chsh failed — set default shell manually"
 else

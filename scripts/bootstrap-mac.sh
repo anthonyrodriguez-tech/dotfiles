@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # Locate lib.sh whether we're piped via curl or run from the repo.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2> /dev/null && pwd || echo "")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 if [ -n "${SCRIPT_DIR}" ] && [ -f "${SCRIPT_DIR}/common/lib.sh" ]; then
     # shellcheck source=scripts/common/lib.sh
     . "${SCRIPT_DIR}/common/lib.sh"
@@ -40,7 +40,7 @@ fi
 
 # ── 1. Xcode Command Line Tools ───────────────────────────────────────────
 log::step "Xcode Command Line Tools"
-if xcode-select -p > /dev/null 2>&1; then
+if xcode-select -p >/dev/null 2>&1; then
     log::ok "already installed"
 else
     xcode-select --install || true
@@ -80,7 +80,7 @@ BREW_CASKS=(
 
 log::step "Homebrew formulas"
 for pkg in "${BREW_FORMULAS[@]}"; do
-    if brew list --formula "${pkg}" > /dev/null 2>&1; then
+    if brew list --formula "${pkg}" >/dev/null 2>&1; then
         log::ok "${pkg}"
     else
         brew install "${pkg}"
@@ -89,7 +89,7 @@ done
 
 log::step "Homebrew casks"
 for pkg in "${BREW_CASKS[@]}"; do
-    if brew list --cask "${pkg}" > /dev/null 2>&1; then
+    if brew list --cask "${pkg}" >/dev/null 2>&1; then
         log::ok "${pkg}"
     else
         brew install --cask "${pkg}"
@@ -104,7 +104,7 @@ if [ "${SHELL:-}" = "${BREW_ZSH}" ]; then
 elif [ -x "${BREW_ZSH}" ]; then
     if ! grep -q "${BREW_ZSH}" /etc/shells; then
         log::step "registering ${BREW_ZSH} in /etc/shells (sudo)"
-        echo "${BREW_ZSH}" | sudo tee -a /etc/shells > /dev/null
+        echo "${BREW_ZSH}" | sudo tee -a /etc/shells >/dev/null
     fi
     chsh -s "${BREW_ZSH}" || log::warn "chsh failed — set default shell manually"
 fi
