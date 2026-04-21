@@ -39,9 +39,9 @@ fi
 
 # ── Detect package manager ────────────────────────────────────────────────
 PM=""
-if   has_cmd apt-get; then PM="apt"
-elif has_cmd dnf;     then PM="dnf"
-elif has_cmd pacman;  then PM="pacman"
+if has_cmd apt-get; then PM="apt"
+elif has_cmd dnf; then PM="dnf"
+elif has_cmd pacman; then PM="pacman"
 else
     log::err "no supported package manager found (apt/dnf/pacman)"
     exit 1

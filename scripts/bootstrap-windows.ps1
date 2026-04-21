@@ -16,7 +16,8 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 #Requires -Version 5.1
-
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Intentional: colorised output in a bootstrap script')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Intentional: Scoop official installer requires iex')]
 [CmdletBinding()]
 param(
     [string]$RepoUrl = $(if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/tony/dotfiles.git' })

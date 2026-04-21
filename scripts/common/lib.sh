@@ -25,10 +25,10 @@ else
     readonly _C_RED=""
 fi
 
-log::step() { printf '%s==> %s%s\n'  "${_C_BOLD}${_C_BLUE}" "$*" "${_C_RESET}"; }
-log::ok()   { printf '%s  ✓ %s%s\n'  "${_C_GREEN}"         "$*" "${_C_RESET}"; }
-log::warn() { printf '%s  ! %s%s\n'  "${_C_YELLOW}"        "$*" "${_C_RESET}" >&2; }
-log::err()  { printf '%s  ✗ %s%s\n'  "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
+log::step() { printf '%s==> %s%s\n' "${_C_BOLD}${_C_BLUE}" "$*" "${_C_RESET}"; }
+log::ok() { printf '%s  ✓ %s%s\n' "${_C_GREEN}" "$*" "${_C_RESET}"; }
+log::warn() { printf '%s  ! %s%s\n' "${_C_YELLOW}" "$*" "${_C_RESET}" >&2; }
+log::err() { printf '%s  ✗ %s%s\n' "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
 
 # has_cmd <name> — 0 if in PATH, 1 otherwise.
 has_cmd() { command -v "$1" > /dev/null 2>&1; }
