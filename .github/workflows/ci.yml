@@ -73,14 +73,20 @@ jobs:
         run: luacheck home/dot_config/nvim/lua home/dot_config/wezterm
 
   # ── actionlint: own workflow YAML stays healthy ───────────────────────
+  # Invoked via the upstream download script (the recommended install in
+  # actionlint's own README). Third-party wrappers have recurring "linted
+  # 0 files" false positives — staying close to upstream avoids them.
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install actionlint
+        run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
       - name: Run actionlint
-        uses: raven-actions/actionlint@v2
+        run: ./actionlint -color
 
   # ── neovim headless smoke: lazy.nvim installs, no startup errors ──────
   # Ubuntu ships an old nvim; LazyVim requires 0.10+. Pull the upstream
