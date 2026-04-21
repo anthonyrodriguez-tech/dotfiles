@@ -96,7 +96,7 @@ jobs:
             --promptString "HTTPS proxy URL (blank if none)=http://proxy.ci:8080"
 
       - name: chezmoi apply --dry-run
-        run: $HOME/.local/bin/chezmoi apply --dry-run --verbose
+        run: $HOME/.local/bin/chezmoi apply --source="$PWD/home" --dry-run --verbose
 
       - name: Validate rendered settings.json is valid JSON
         run: |
