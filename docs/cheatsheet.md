@@ -73,13 +73,32 @@ terminal `git diff`.
 
 ---
 
+## Zsh readline (emacs mode)
+
+| Raccourci         | Action                                      |
+|-------------------|---------------------------------------------|
+| `Ctrl-P` / `↑`   | historique préfixé vers le haut             |
+| `Ctrl-N` / `↓`   | historique préfixé vers le bas              |
+| `Ctrl-←`         | mot précédent                               |
+| `Ctrl-→`         | mot suivant                                 |
+| `Alt-←`          | mot précédent (macOS)                       |
+| `Alt-→`          | mot suivant (macOS)                         |
+| `Ctrl-U`         | supprimer de la position au début de ligne  |
+| `Ctrl-K`         | supprimer de la position à la fin de ligne  |
+| `Ctrl-X Ctrl-E`  | ouvrir la ligne en cours dans `$EDITOR`     |
+| `Ctrl-R`         | fzf — recherche dans l'historique           |
+| `Ctrl-T`         | fzf — recherche de fichier                  |
+| `Alt-C`          | fzf — `cd` interactif                       |
+
+---
+
 ## Zsh aliases
 
 ### Git
 | Alias | Expands to                                |
 |-------|-------------------------------------------|
 | `g`   | `git`                                     |
-| `gs`  | `git status -sb`                          |
+| `gs`  | `git status`                              |
 | `gd`  | `git diff`                                |
 | `gc`  | `git commit`                              |
 | `gp`  | `git push`                                |
@@ -89,14 +108,15 @@ terminal `git diff`.
 ### Files / navigation
 | Alias  | Expands to                              |
 |--------|-----------------------------------------|
-| `ls`   | `eza --icons --group-directories-first` |
-| `ll`   | `eza -l ...`                            |
-| `la`   | `eza -la ...`                           |
+| `ls`   | `eza --group-directories-first`         |
+| `ll`   | `eza -l --git --group-directories-first`|
+| `la`   | `eza -la --git --group-directories-first`|
+| `lt`   | `eza --tree --level=2 ...`              |
 | `cat`  | `bat --paging=never`                    |
-| `grep` | `rg` when ripgrep is present            |
 
-Guarded: if `eza`/`bat`/`rg`/`fd` isn't installed (rare, e.g. fresh
-MSYS2), the alias silently falls back to the GNU version.
+Guarded: if `eza`/`bat`/`fd` isn't installed (rare, e.g. fresh MSYS2),
+the alias silently falls back to the GNU version. Note: no `grep` alias —
+invoke `rg` directly.
 
 ### Chezmoi
 | Alias  | Expands to              |

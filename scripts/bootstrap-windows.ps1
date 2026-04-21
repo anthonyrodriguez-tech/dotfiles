@@ -118,7 +118,16 @@ if (-not (Test-Cmd win32yank)) {
     if (-not $?) { Write-Warn 'win32yank not in scoop — clipboard in nvim may fall back to clip.exe' }
 }
 
-# ── 5. chezmoi init --apply ───────────────────────────────────────────────
+# ── 5. Claude Code (native installer, replaces legacy `npm i -g`) ────────
+Write-Step 'Claude Code (native installer)'
+if (Test-Cmd claude) {
+    Write-Ok 'already installed'
+}
+else {
+    Invoke-RestMethod -Uri 'https://claude.ai/install.ps1' | Invoke-Expression
+}
+
+# ── 6. chezmoi init --apply ───────────────────────────────────────────────
 Write-Step "chezmoi init --apply $RepoUrl"
 $chezmoiStateDir = Join-Path $env:USERPROFILE '.local\share\chezmoi'
 $chezmoiCfgDir   = Join-Path $env:USERPROFILE '.config\chezmoi'
@@ -129,8 +138,8 @@ else {
     chezmoi init --apply $RepoUrl
 }
 
-# ── 6. Post-install ───────────────────────────────────────────────────────
+# ── 7. Post-install ───────────────────────────────────────────────────────
 Write-Step 'done'
 Write-Ok 'open WezTerm — it will launch MSYS2 zsh and load the dotfiles.'
-Write-Ok 'then run: claude auth login'
+Write-Ok 'then run: claude  (first launch prompts for browser login)'
 Write-Warn 'If this was a first install, reboot once to make sure PATH + font cache are refreshed.'

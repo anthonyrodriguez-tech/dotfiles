@@ -109,9 +109,17 @@ elif [ -x "${BREW_ZSH}" ]; then
     chsh -s "${BREW_ZSH}" || log::warn "chsh failed — set default shell manually"
 fi
 
-# ── 5. chezmoi ────────────────────────────────────────────────────────────
+# ── 5. Claude Code (native installer, replaces legacy `npm i -g`) ────────
+if ! has_cmd claude; then
+    log::step "Claude Code (native installer)"
+    curl -fsSL https://claude.ai/install.sh | bash
+else
+    log::ok "claude already installed"
+fi
+
+# ── 6. chezmoi ────────────────────────────────────────────────────────────
 chezmoi_bootstrap "${REPO_URL}"
 
 log::step "done"
 log::ok "open a new wezterm window — zsh + starship should greet you"
-log::ok "then run: claude auth login"
+log::ok "then run: claude  (first launch prompts for browser login)"

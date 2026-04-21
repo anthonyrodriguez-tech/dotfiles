@@ -66,7 +66,8 @@ apt)
     ${SUDO} apt-get install -y --no-install-recommends \
         zsh git curl ca-certificates build-essential unzip \
         ripgrep fd-find bat neovim tmux jq \
-        fzf zoxide
+        fzf zoxide \
+        xclip wl-clipboard
     # Debian names `fd` binary `fdfind` — symlink into ~/.local/bin.
     if ! has_cmd fd && has_cmd fdfind; then
         mkdir -p "${HOME}/.local/bin"
@@ -77,14 +78,16 @@ dnf)
     ${SUDO} dnf install -y \
         zsh git curl ca-certificates @development-tools unzip \
         ripgrep fd-find bat neovim tmux jq \
-        fzf zoxide eza
+        fzf zoxide eza \
+        xclip wl-clipboard
     ;;
 pacman)
     ${SUDO} pacman -Sy --needed --noconfirm \
         zsh git curl base-devel unzip \
         ripgrep fd bat neovim tmux jq yq \
         fzf zoxide eza starship atuin mise \
-        chezmoi lazygit git-delta github-cli ttf-jetbrains-mono-nerd
+        chezmoi lazygit git-delta github-cli ttf-jetbrains-mono-nerd \
+        xclip wl-clipboard
     ;;
 esac
 
@@ -146,9 +149,17 @@ else
     log::ok "already zsh or zsh missing"
 fi
 
+# ── Claude Code (native installer, replaces legacy `npm i -g`) ───────────
+if ! has_cmd claude; then
+    log::step "Claude Code (native installer)"
+    curl -fsSL https://claude.ai/install.sh | bash
+else
+    log::ok "claude already installed"
+fi
+
 # ── chezmoi apply ─────────────────────────────────────────────────────────
 chezmoi_bootstrap "${REPO_URL}"
 
 log::step "done"
 log::ok "open a new terminal — zsh + starship should greet you"
-log::ok "then run: claude auth login"
+log::ok "then run: claude  (first launch prompts for browser login)"

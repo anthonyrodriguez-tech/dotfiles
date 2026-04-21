@@ -3,10 +3,9 @@
 > Cross-platform dotfiles for **macOS**, **Linux** and **Windows** (native, via Scoop + MSYS2).
 > Managed with [chezmoi](https://www.chezmoi.io/) for per-machine templating.
 
-<!-- badges: placeholders, wired up in Phase 11 (CI) -->
-![CI](https://img.shields.io/badge/ci-pending-lightgrey)
+[![CI](https://github.com/tony/dotfiles/actions/workflows/ci.yml/badge.svg)](https://github.com/tony/dotfiles/actions/workflows/ci.yml)
 ![chezmoi](https://img.shields.io/badge/managed%20by-chezmoi-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
+[![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 ## Table of contents
 
