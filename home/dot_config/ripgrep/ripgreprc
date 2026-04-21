@@ -1,0 +1,32 @@
+# WHAT  : ripgrep default flags
+# WHERE : home/dot_config/ripgrep/ripgreprc  →  ~/.config/ripgrep/ripgreprc
+# WHY   : set once here rather than aliasing rg everywhere
+
+# Always show line numbers
+--line-number
+
+# Follow symlinks
+--follow
+
+# Smart-case (case-insensitive unless pattern has uppercase)
+--smart-case
+
+# Use colors — matches bold, line numbers dim
+--color=always
+--colors=line:style:dim
+--colors=match:style:bold
+
+# Respect .gitignore / .ignore by default (already the default, explicit for clarity)
+--no-ignore-parent
+
+# Compressed file search
+--search-zip
+
+# Don't search these dirs even when not in a git repo
+--glob=!.git/
+--glob=!node_modules/
+--glob=!.direnv/
+--glob=!target/
+--glob=!dist/
+--glob=!*.min.js
+--glob=!*.lock
