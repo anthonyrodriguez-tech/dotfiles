@@ -23,8 +23,8 @@
 {{- $proxyHttp  := "" -}}
 {{- $proxyHttps := "" -}}
 {{- if eq $profile "safran" -}}
-  {{- $proxyHttp  = promptStringOnce . "proxy_http"  "HTTP proxy URL (blank if none)"  "" -}}
-  {{- $proxyHttps = promptStringOnce . "proxy_https" "HTTPS proxy URL (blank if none)" "" -}}
+  {{- $proxyHttp  = promptStringOnce . "proxy_http"  "HTTP proxy URL (blank if none)" -}}
+  {{- $proxyHttps = promptStringOnce . "proxy_https" "HTTPS proxy URL (blank if none)" -}}
 {{- end -}}
 
 [data]

@@ -89,11 +89,11 @@ jobs:
       - name: chezmoi init
         run: |
           $HOME/.local/bin/chezmoi init --source="$PWD/home" --no-tty \
-            --promptString "email=ci@ci.test" \
-            --promptString "name=CI Bot" \
-            --promptChoice "profile=${{ matrix.profile }}" \
-            --promptString "proxy_http=http://proxy.ci:8080" \
-            --promptString "proxy_https=http://proxy.ci:8080"
+            --promptString "Email address=ci@ci.test" \
+            --promptString "Full name=CI Bot" \
+            --promptChoice "Machine profile=${{ matrix.profile }}" \
+            --promptString "HTTP proxy URL (blank if none)=http://proxy.ci:8080" \
+            --promptString "HTTPS proxy URL (blank if none)=http://proxy.ci:8080"
 
       - name: chezmoi apply --dry-run
         run: $HOME/.local/bin/chezmoi apply --dry-run --verbose
