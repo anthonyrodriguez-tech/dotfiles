@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # WHAT  : Windows bootstrap — Scoop (user-level) + MSYS2 + chezmoi.
 # WHERE : scripts/bootstrap-windows.ps1
 # WHY   : Safran / any corporate Windows laptop where we don't have admin
