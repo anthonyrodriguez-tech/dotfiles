@@ -9,12 +9,17 @@
   Prompts use the `*Once` variants: chezmoi only asks if the value is
   missing, so re-running `chezmoi init` on an already-provisioned machine
   is silent and idempotent.
+
+  Profiles:
+    arch    → personal Arch Linux machine
+    ubuntu  → personal Ubuntu / Debian machine
+    safran  → Safran corporate Windows laptop (MSYS2, proxy, restricted)
   ─────────────────────────────────────────────────────────────────────────
 */ -}}
 
 {{- $email   := promptStringOnce . "email"   "Email address" -}}
 {{- $name    := promptStringOnce . "name"    "Full name" -}}
-{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "safran" "geneva" "homelab") -}}
+{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "arch" "ubuntu" "safran") -}}
 
 {{/* Corporate-profile-only extras — resolved here so the rest of the
      source tree can reference static `.proxy_http` etc. without having to

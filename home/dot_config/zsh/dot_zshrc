@@ -11,7 +11,6 @@
 
 # OS triage — every module can branch on $DOTFILES_OS without re-running uname.
 case "$(uname -s)" in
-    Darwin)               export DOTFILES_OS=mac ;;
     Linux)                export DOTFILES_OS=linux ;;
     MINGW*|MSYS*|CYGWIN*) export DOTFILES_OS=windows ;;
     *)                    export DOTFILES_OS=unknown ;;
@@ -19,7 +18,7 @@ esac
 
 # Source modules in dependency order. Notes on ordering:
 #   • options   first so later modules get the right glob/word semantics.
-#   • path      before plugins so brew/mise are on $PATH when zinit needs git.
+#   • path      before plugins so mise/scoop are on $PATH when zinit needs git.
 #   • completion before plugins (sets ZSH_COMPDUMP + zstyles only — compinit
 #                itself fires inside plugins.zsh once zsh-completions is in fpath).
 #   • plugins   does compinit + loads fzf-tab / autosuggestions / syntax-highlighting.

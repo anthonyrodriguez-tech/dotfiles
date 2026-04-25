@@ -45,11 +45,11 @@ function Write-Err {
     param([string]$Msg) Write-Host "  x $Msg" -ForegroundColor Red
 }
 
-# Both upstream installers (Scoop, Claude Code) ship a `irm | iex` pattern
-# that we have no choice but to honour. Wrap in one helper so the rule
-# suppression is scoped to this single function.
+# Upstream installers (Scoop, Claude Code, oh-my-pi) all ship a
+# `irm | iex` pattern that we have no choice but to honour. Wrap in one
+# helper so the rule suppression is scoped to this single function.
 function Invoke-RemoteInstaller {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Upstream Scoop / Claude installers are designed for iex')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Upstream Scoop / Claude / omp installers are designed for iex')]
     param([string]$Uri)
     Invoke-RestMethod -Uri $Uri | Invoke-Expression
 }
@@ -152,7 +152,7 @@ if (Test-Cmd scoop) {
     Write-Ok 'already installed'
 }
 else {
-    Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
+    Invoke-RemoteInstaller 'https://get.scoop.sh'
 }
 
 # Refresh PATH so the newly-installed scoop is callable below.
@@ -270,10 +270,19 @@ if (Test-Cmd claude) {
     Write-Ok 'already installed'
 }
 else {
-    Invoke-RestMethod -Uri 'https://claude.ai/install.ps1' | Invoke-Expression
+    Invoke-RemoteInstaller 'https://claude.ai/install.ps1'
 }
 
-# ── 6. chezmoi init --apply ───────────────────────────────────────────────
+# ── 6. oh-my-pi (omp) — AI coding agent (fork of pi-mono) ────────────────
+Write-Step 'oh-my-pi (upstream installer)'
+if (Test-Cmd omp) {
+    Write-Ok 'already installed'
+}
+else {
+    Invoke-RemoteInstaller 'https://raw.githubusercontent.com/can1357/oh-my-pi/main/scripts/install.ps1'
+}
+
+# ── 7. chezmoi init --apply ───────────────────────────────────────────────
 # DOTFILES_BOOTSTRAP_SKIP_CHEZMOI=1 stops here. Two callers want this:
 #   - CI: chezmoi init prompts for email/name/profile and the bootstrap
 #     doesn't pre-answer them; templates are validated by a separate job.
@@ -294,8 +303,9 @@ else {
     }
 }
 
-# ── 7. Post-install ───────────────────────────────────────────────────────
+# ── 8. Post-install ───────────────────────────────────────────────────────
 Write-Step 'done'
 Write-Ok 'open WezTerm — it will launch MSYS2 zsh and load the dotfiles.'
 Write-Ok 'then run: claude  (first launch prompts for browser login)'
+Write-Ok 'and:     omp     (configure providers via /login)'
 Write-Warn 'If this was a first install, reboot once to make sure PATH + font cache are refreshed.'

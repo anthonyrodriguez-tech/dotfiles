@@ -75,8 +75,8 @@ during install, since by that point we know where MSYS2 lives.
    (either out of the box or via `command =`).
 2. Port `appearance.lua` → `config` file. One commit.
 3. Rewrite keybinds — ~20 chords, maybe half a day. One commit.
-4. Update `bootstrap-*` scripts to install Ghostty + drop WezTerm
-   install step. One commit.
+4. Update `bootstrap-{arch,ubuntu,windows}` scripts to install Ghostty
+   + drop WezTerm install step. One commit.
 5. Delete `home/dot_config/wezterm/` and archive it as a tag
    (`pre-ghostty`) so we can roll back if Ghostty regresses.
 

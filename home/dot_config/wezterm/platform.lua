@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────
 -- WHAT  : per-OS branches — default shell, font rendering target, keyboard.
 -- WHERE : home/dot_config/wezterm/platform.lua
--- WHY   : zsh is the universal shell (phase 2), but the *path* differs.
+-- WHY   : zsh is the universal shell, but the *path* differs.
 --         On Safran Windows (no admin) we launch MSYS2 zsh by absolute
 --         path; CHERE_INVOKING=1 keeps the spawn cwd instead of jumping
 --         to $HOME on shell start.
@@ -9,7 +9,6 @@
 
 local M = {}
 
-local function is_mac(t)     return t:find('darwin')  ~= nil end
 local function is_linux(t)   return t:find('linux')   ~= nil end
 local function is_windows(t) return t:find('windows') ~= nil end
 
@@ -32,15 +31,7 @@ end
 function M.apply(config, wezterm)
     local triple = wezterm.target_triple
 
-    if is_mac(triple) then
-        config.default_prog = { '/bin/zsh', '-l' }
-        config.freetype_load_target = 'Light'
-        config.front_end = 'WebGpu'   -- smoother on M-series
-        -- Make Alt act as Meta so zsh / readline word-jumps work.
-        config.send_composed_key_when_left_alt_is_pressed  = false
-        config.send_composed_key_when_right_alt_is_pressed = false
-
-    elseif is_linux(triple) then
+    if is_linux(triple) then
         config.default_prog = { '/usr/bin/zsh', '-l' }
         config.freetype_load_target = 'Normal'
 

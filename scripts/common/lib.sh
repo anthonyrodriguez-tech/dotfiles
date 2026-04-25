@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────
 # WHAT  : shared bash helpers — log, install-if-missing, chezmoi bootstrap.
-# WHERE : scripts/common/lib.sh, sourced by bootstrap-{mac,linux}.sh.
+# WHERE : scripts/common/lib.sh, sourced by bootstrap-{arch,ubuntu}.sh
+#         and uninstall-{arch,ubuntu}.sh.
 # WHY   : idempotence + clean logs + a single place for the chezmoi init
-#         invocation (so macOS and Linux don't drift apart).
+#         invocation so the per-distro scripts don't drift apart.
 # ─────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -46,7 +47,7 @@ require() {
 # If chezmoi is already initialised on this machine, run `apply` only.
 chezmoi_bootstrap() {
     local repo="$1"
-    require chezmoi "install chezmoi via brew / apt / scoop / pacman first"
+    require chezmoi "install chezmoi via pacman / apt / scoop first"
 
     if [ -d "${HOME}/.local/share/chezmoi" ] ||
         [ -d "${HOME}/.config/chezmoi" ]; then

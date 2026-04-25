@@ -91,6 +91,20 @@ foreach ($d in @('.claude', '.claude.json')) {
     if (Test-Path $path) { Write-Warn "kept $path (contains your settings/history) — delete manually if desired" }
 }
 
+# ── 3b. oh-my-pi (omp) ────────────────────────────────────────────────────
+Write-Step 'oh-my-pi (omp)'
+foreach ($name in @('omp.exe', 'omp.cmd', 'omp')) {
+    $p = Join-Path $env:USERPROFILE ".local\bin\$name"
+    if (Test-Path $p) {
+        Remove-Item -Force -ErrorAction SilentlyContinue $p
+        Write-Ok "removed $p"
+    }
+}
+$ompData = Join-Path $env:USERPROFILE '.omp'
+if (Test-Path $ompData) {
+    Write-Warn "kept $ompData (contains your sessions/credentials) — delete manually if desired"
+}
+
 # ── 4. Scoop apps installed by bootstrap ──────────────────────────────────
 Write-Step 'Scoop packages'
 $scoopPackages = @(

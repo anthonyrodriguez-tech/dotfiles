@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : Health check — verifies every binary the dotfiles expect is
+#         on PATH, and runs nvim / chezmoi diagnostics.
+# WHERE : home/dot_local/bin/executable_dotfiles-doctor
+#         → ~/.local/bin/dotfiles-doctor  (deployed by chezmoi)
+# WHY   : "It worked yesterday" debugging. Run after a system upgrade,
+#         a failed bootstrap re-run, or when something feels off.
+#
+# Usage:
+#   dotfiles-doctor          # full report
+#   dotfiles-doctor --quiet  # only show problems (good for CI)
+# ─────────────────────────────────────────────────────────────────────────
+
+set -u
+
+if [ -t 1 ]; then
+    _C_RESET=$'\033[0m'; _C_BOLD=$'\033[1m'
+    _C_BLUE=$'\033[34m'; _C_GREEN=$'\033[32m'
+    _C_YELLOW=$'\033[33m'; _C_RED=$'\033[31m'
+else
+    _C_RESET=""; _C_BOLD=""; _C_BLUE=""; _C_GREEN=""; _C_YELLOW=""; _C_RED=""
+fi
+
+QUIET=0
+case "${1:-}" in
+    --quiet | -q) QUIET=1 ;;
+    -h | --help)
+        sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+    "") ;;
+    *)
+        printf '%s  ✗ unknown flag: %s%s\n' "${_C_RED}" "$1" "${_C_RESET}" >&2
+        exit 2
+        ;;
+esac
+
+step()  { printf '%s==> %s%s\n' "${_C_BOLD}${_C_BLUE}" "$*" "${_C_RESET}"; }
+ok()    { [ "$QUIET" -eq 1 ] || printf '%s  OK   %s%s\n' "${_C_GREEN}" "$*" "${_C_RESET}"; }
+miss()  { printf '%s  MISS %s%s\n' "${_C_RED}" "$*" "${_C_RESET}"; }
+warn()  { printf '%s  WARN %s%s\n' "${_C_YELLOW}" "$*" "${_C_RESET}"; }
+
+MISS_COUNT=0
+WARN_COUNT=0
+
+# ── 1. Required binaries on PATH ──────────────────────────────────────────
+step "binaries on PATH"
+REQUIRED=(zsh git nvim chezmoi fzf zoxide rg fd bat eza starship atuin mise lazygit delta jq)
+OPTIONAL=(gh tmux yq claude omp bun)
+
+for b in "${REQUIRED[@]}"; do
+    if command -v "$b" >/dev/null 2>&1; then
+        ok "$b ($(command -v "$b"))"
+    else
+        miss "$b — required"
+        MISS_COUNT=$((MISS_COUNT + 1))
+    fi
+done
+
+for b in "${OPTIONAL[@]}"; do
+    if command -v "$b" >/dev/null 2>&1; then
+        ok "$b ($(command -v "$b"))"
+    else
+        warn "$b — optional"
+        WARN_COUNT=$((WARN_COUNT + 1))
+    fi
+done
+
+# ── 2. Local override files (presence is informational) ───────────────────
+step "local overrides"
+for f in "${HOME}/.gitconfig.local" "${HOME}/.gitconfig.work" \
+         "${XDG_CONFIG_HOME:-${HOME}/.config}/zsh/local.zsh"; do
+    if [ -f "$f" ]; then
+        ok "$f present"
+    else
+        [ "$QUIET" -eq 1 ] || printf '       %s (not present)\n' "$f"
+    fi
+done
+
+# ── 3. chezmoi doctor ─────────────────────────────────────────────────────
+if command -v chezmoi >/dev/null 2>&1; then
+    step "chezmoi doctor"
+    chezmoi doctor || WARN_COUNT=$((WARN_COUNT + 1))
+fi
+
+# ── 4. neovim healthcheck (compact summary) ───────────────────────────────
+if command -v nvim >/dev/null 2>&1; then
+    step "nvim startup smoke"
+    if nvim --headless +qa 2>/tmp/dotfiles-doctor-nvim.err; then
+        if [ -s /tmp/dotfiles-doctor-nvim.err ]; then
+            warn "nvim wrote to stderr on startup:"
+            sed 's/^/         /' /tmp/dotfiles-doctor-nvim.err
+            WARN_COUNT=$((WARN_COUNT + 1))
+        else
+            ok "nvim starts cleanly"
+        fi
+    else
+        miss "nvim failed to start"
+        MISS_COUNT=$((MISS_COUNT + 1))
+    fi
+    rm -f /tmp/dotfiles-doctor-nvim.err
+fi
+
+# ── Summary ───────────────────────────────────────────────────────────────
+step "summary"
+if [ "$MISS_COUNT" -eq 0 ] && [ "$WARN_COUNT" -eq 0 ]; then
+    printf '%s  ✓ all clear%s\n' "${_C_GREEN}${_C_BOLD}" "${_C_RESET}"
+    exit 0
+fi
+
+printf '  %d missing, %d warnings\n' "$MISS_COUNT" "$WARN_COUNT"
+[ "$MISS_COUNT" -gt 0 ] && exit 1
+exit 0

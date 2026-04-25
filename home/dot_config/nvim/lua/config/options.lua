@@ -7,8 +7,7 @@
 --
 -- Note on clipboard=unnamedplus:
 --   • Linux desktop : needs xclip OR wl-clipboard (Wayland)
---   • macOS         : works out of the box (uses pbcopy/pbpaste)
---   • MSYS2/Windows : needs win32yank.exe on $PATH (installed in Phase 9)
+--   • MSYS2/Windows : needs win32yank.exe on $PATH (installed by bootstrap)
 --   If none are present, yanks silently stay in vim's own register.
 -- ─────────────────────────────────────────────────────────────────────────
 

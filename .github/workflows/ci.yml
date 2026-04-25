@@ -28,13 +28,28 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
-          shellcheck -x scripts/bootstrap-mac.sh scripts/bootstrap-linux.sh scripts/common/lib.sh
+          shellcheck -x \
+            scripts/bootstrap-arch.sh \
+            scripts/bootstrap-ubuntu.sh \
+            scripts/uninstall-arch.sh \
+            scripts/uninstall-ubuntu.sh \
+            scripts/common/lib.sh \
+            home/dot_local/bin/executable_dotfiles-update \
+            home/dot_local/bin/executable_dotfiles-doctor
 
       - name: shfmt (diff)
         uses: mfinelli/setup-shfmt@v3
 
       - name: shfmt check
-        run: shfmt -d -i 4 scripts/bootstrap-mac.sh scripts/bootstrap-linux.sh scripts/common/lib.sh
+        run: |
+          shfmt -d -i 4 \
+            scripts/bootstrap-arch.sh \
+            scripts/bootstrap-ubuntu.sh \
+            scripts/uninstall-arch.sh \
+            scripts/uninstall-ubuntu.sh \
+            scripts/common/lib.sh \
+            home/dot_local/bin/executable_dotfiles-update \
+            home/dot_local/bin/executable_dotfiles-doctor
 
   # ── PowerShell ────────────────────────────────────────────────────────
   powershell:
@@ -64,7 +79,13 @@ jobs:
         shell: pwsh
         run: |
           Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
-          $results = Invoke-ScriptAnalyzer -Path scripts/bootstrap-windows.ps1 -Severity Error,Warning
+          $files = @(
+              'scripts/bootstrap-windows.ps1',
+              'scripts/uninstall-windows.ps1',
+              'home/dot_local/bin/dotfiles-update.ps1',
+              'home/dot_local/bin/dotfiles-doctor.ps1'
+          )
+          $results = Invoke-ScriptAnalyzer -Path $files -Severity Error,Warning
           if ($results) {
               $results | Format-Table -AutoSize
               throw "PSScriptAnalyzer reported $($results.Count) issue(s)."
@@ -153,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [personal, safran, geneva, homelab]
+        profile: [arch, ubuntu, safran]
     steps:
       - uses: actions/checkout@v4
 

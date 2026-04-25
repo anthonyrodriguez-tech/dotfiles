@@ -29,7 +29,6 @@ if command -v fzf >/dev/null 2>&1; then
         for _f in \
             /usr/share/fzf/key-bindings.zsh \
             /usr/share/doc/fzf/examples/key-bindings.zsh \
-            /opt/homebrew/opt/fzf/shell/key-bindings.zsh \
             "$HOME/.fzf/shell/key-bindings.zsh"
         do
             [[ -r "$_f" ]] && { source "$_f"; break; }
@@ -37,7 +36,6 @@ if command -v fzf >/dev/null 2>&1; then
         for _f in \
             /usr/share/fzf/completion.zsh \
             /usr/share/doc/fzf/examples/completion.zsh \
-            /opt/homebrew/opt/fzf/shell/completion.zsh \
             "$HOME/.fzf/shell/completion.zsh"
         do
             [[ -r "$_f" ]] && { source "$_f"; break; }

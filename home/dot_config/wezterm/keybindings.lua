@@ -1,10 +1,10 @@
 -- ─────────────────────────────────────────────────────────────────────────
 -- WHAT  : tmux-like leader bindings + classic clipboard chords.
 -- WHERE : home/dot_config/wezterm/keybindings.lua
--- WHY   : Muscle memory for `Ctrl-a` as tmux prefix exists from
---         macOS/Linux setups (where real tmux still runs). Mirroring
---         the same prefix here removes friction when WezTerm is the
---         multiplexer (Safran Windows, no tmux).
+-- WHY   : Muscle memory for `Ctrl-a` as tmux prefix exists from Linux
+--         setups (where real tmux still runs). Mirroring the same prefix
+--         here removes friction when WezTerm is the multiplexer
+--         (Safran Windows, no tmux).
 --
 -- Convention used:
 --   leader            = LEADER (Ctrl-a, 1000 ms timeout)

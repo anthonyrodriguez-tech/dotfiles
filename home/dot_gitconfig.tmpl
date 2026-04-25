@@ -5,12 +5,12 @@
 #         Work email / GPG / anything machine-specific goes in
 #         ~/.gitconfig.local (included at the bottom, never tracked).
 #         Emails for repos under ~/work/ get overridden by the includeIf
-#         section — the home office laptops (geneva / safran) typically
-#         clone corporate repos there.
+#         section — corporate laptops (safran) typically clone work repos
+#         there.
 #
 # autocrlf:
 #   • Windows native → `true`   (CRLF on checkout, LF in the repo).
-#   • macOS / Linux  → `input`  (never modify on checkout, LF on commit).
+#   • Linux          → `input`  (never modify on checkout, LF on commit).
 #   • MSYS2 on Windows reports .chezmoi.os = "windows" to chezmoi, which
 #     is the behaviour we want since git.exe is the native build anyway.
 # ─────────────────────────────────────────────────────────────────────────

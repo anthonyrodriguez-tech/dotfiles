@@ -6,7 +6,12 @@
       "Bash(echo $HOME)",
       "Bash(command -v actionlint)",
       "Bash(actionlint -color .github/workflows/bootstrap-windows-e2e.yml .github/workflows/ci.yml)",
-      "PowerShell(ConvertFrom-Yaml *)"
+      "PowerShell(ConvertFrom-Yaml *)",
+      "PowerShell(gh repo *)",
+      "Bash(chmod +x C:/Users/Tony/dotfiles/scripts/bootstrap-arch.sh C:/Users/Tony/dotfiles/scripts/bootstrap-ubuntu.sh)",
+      "Bash(chmod +x C:/Users/Tony/dotfiles/scripts/uninstall-arch.sh C:/Users/Tony/dotfiles/scripts/uninstall-ubuntu.sh)",
+      "Bash(chmod +x C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-update C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-doctor)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

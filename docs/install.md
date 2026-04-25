@@ -1,19 +1,19 @@
 # Install — ce qu'il faut pour que tout fonctionne
 
-Le bootstrap (`scripts/bootstrap-*.sh`) couvre la majorité de l'installation.
-Ce document explique ce qu'il installe, ce qui est manuel, et comment vérifier
-que tout est en ordre.
+Le bootstrap (`scripts/bootstrap-*.sh` ou `.ps1`) couvre la majorité de
+l'installation. Ce document explique ce qu'il installe, ce qui est manuel,
+et comment vérifier que tout est en ordre.
 
 ---
 
 ## TL;DR — première machine
 
 ```sh
-# Linux
-./scripts/bootstrap-linux.sh
+# Arch Linux
+./scripts/bootstrap-arch.sh
 
-# macOS
-./scripts/bootstrap-mac.sh
+# Ubuntu / Debian
+./scripts/bootstrap-ubuntu.sh
 
 # Windows (PowerShell non-admin)
 .\scripts\bootstrap-windows.ps1
@@ -23,7 +23,8 @@ Puis, dans un nouveau terminal :
 
 ```sh
 nvim          # déclenche lazy.nvim + Mason au premier lancement
-claude auth login
+claude        # premier lancement → login navigateur
+omp           # configurer les providers via /login
 ```
 
 ---
@@ -32,27 +33,27 @@ claude auth login
 
 ### Outils systèmes (via le gestionnaire de paquets)
 
-| Outil | Arch (`pacman`) | Debian/Ubuntu (`apt`) | macOS (`brew`) |
+| Outil | Arch (`pacman`) | Debian/Ubuntu (`apt`) | Windows (`scoop`) |
 |-------|:-:|:-:|:-:|
-| `zsh` | ✓ | ✓ | ✓ |
+| `zsh` | ✓ | ✓ | via MSYS2 |
 | `git` | ✓ | ✓ | ✓ |
 | `neovim` | ✓ | ✓ | ✓ |
-| `chezmoi` | ✓ | via curl | via curl |
+| `chezmoi` | ✓ | via curl | ✓ |
 | `fzf` | ✓ | ✓ | ✓ |
 | `zoxide` | ✓ | ✓ | ✓ |
 | `ripgrep` | ✓ | ✓ | ✓ |
 | `fd` | ✓ | `fd-find` (symlinké) | ✓ |
-| `bat` | ✓ | ✓ | ✓ |
-| `eza` | ✓ | ⚠ absent (voir ci-dessous) | ✓ |
+| `bat` | ✓ | `batcat` (symlinké) | ✓ |
+| `eza` | ✓ | via release GitHub | ✓ |
 | `starship` | ✓ | via curl | ✓ |
 | `atuin` | ✓ | via curl | ✓ |
 | `mise` | ✓ | via curl | ✓ |
-| `lazygit` | ✓ | ⚠ absent (voir ci-dessous) | ✓ |
-| `git-delta` | ✓ | ⚠ absent (voir ci-dessous) | ✓ |
-| `gh` | ✓ | — | ✓ |
-| `tmux` | ✓ | ✓ | ✓ |
+| `lazygit` | ✓ | via release GitHub | ✓ |
+| `git-delta` | ✓ | via release `.deb` | ✓ |
+| `gh` | ✓ | via apt repo upstream | ✓ |
+| `tmux` | ✓ | ✓ | — (WezTerm fait office de mux) |
 | `jq` / `yq` | ✓ | `jq` seulement | ✓ |
-| `ttf-jetbrains-mono-nerd` | ✓ | — | ✓ (cask) |
+| `ttf-jetbrains-mono-nerd` | ✓ | via release nerd-fonts | ✓ |
 
 ### Outils auto-bootstrappés (pas de commande système requise)
 
@@ -62,37 +63,12 @@ claude auth login
 | `lazy.nvim` + LazyVim | cloné par `lua/config/lazy.lua` au premier `nvim` |
 | LSP, formatters, linters | installés par Mason (`:MasonInstall` ou auto au premier `nvim`) |
 
----
+### Outils AI
 
-## Installations manuelles sur Debian/Ubuntu
-
-Le dépôt `apt` ne propose pas encore `eza`, `lazygit`, ni `git-delta` de façon
-fiable. À installer à la main :
-
-### eza
-```sh
-# Via cargo (nécessite rust)
-cargo install eza
-
-# Ou via release GitHub
-EZA_VERSION=$(curl -s https://api.github.com/repos/eza-community/eza/releases/latest | jq -r .tag_name)
-curl -Lo /tmp/eza.tar.gz "https://github.com/eza-community/eza/releases/download/${EZA_VERSION}/eza_x86_64-unknown-linux-gnu.tar.gz"
-tar -xf /tmp/eza.tar.gz -C ~/.local/bin eza
-```
-
-### git-delta
-```sh
-DELTA_VERSION=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | jq -r .tag_name)
-curl -Lo /tmp/delta.deb "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_amd64.deb"
-sudo dpkg -i /tmp/delta.deb
-```
-
-### lazygit
-```sh
-LG_VERSION=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | jq -r .tag_name | sed 's/v//')
-curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LG_VERSION}/lazygit_${LG_VERSION}_Linux_x86_64.tar.gz"
-tar -xf /tmp/lazygit.tar.gz -C ~/.local/bin lazygit
-```
+| Outil | Linux | Windows | Note |
+|-------|:-:|:-:|---|
+| `claude` (Claude Code) | curl `claude.ai/install.sh` | irm `claude.ai/install.ps1` | Anthropic CLI officiel |
+| `omp` (oh-my-pi) | curl `oh-my-pi/install.sh` | irm `oh-my-pi/install.ps1` | Fork de pi-mono, lit aussi `~/.claude/` |
 
 ---
 
@@ -105,10 +81,9 @@ Ces étapes ne peuvent pas être automatisées — elles nécessitent une intera
 La config utilise `JetBrainsMono Nerd Font`. Si les icônes s'affichent comme
 des carrés `[?]`, la police n'est pas installée ou pas sélectionnée.
 
-- **Linux** : `fc-list | grep -i jetbrains` — si vide, installer
-  `ttf-jetbrains-mono-nerd` (Arch) ou télécharger depuis nerdfonts.com.
-- **macOS** : `brew install --cask font-jetbrains-mono-nerd-font`
-- **Windows** : le bootstrap tente `scoop install JetBrains-Mono-NF`
+- **Arch** : installée par `pacman` (`ttf-jetbrains-mono-nerd`)
+- **Ubuntu/Debian** : installée par le bootstrap dans `~/.local/share/fonts/`
+- **Windows** : `scoop install JetBrainsMono-NF` lancé par le bootstrap
 
 Après installation : `fc-cache -fv` sur Linux, redémarrer WezTerm.
 
@@ -123,22 +98,25 @@ listés dans `lua/plugins/lsp.lua` et `lua/plugins/formatting.lua`.
 Cela peut prendre 2–5 minutes. Vérifier avec `:checkhealth`.
 
 **LSP installés automatiquement :** `omnisharp`, `ts_ls`, `terraformls`,
-`dockerls`, `gopls`, `bashls`, `lua_ls`, `yamlls`.  
-**Formatters :** `csharpier`, `prettier`, `stylua`, `shfmt`.  
-**Linters :** `yamllint`, `actionlint`.  
+`dockerls`, `gopls`, `bashls`, `lua_ls`, `yamlls`.
+**Formatters :** `csharpier`, `prettier`, `stylua`, `shfmt`.
+**Linters :** `yamllint`, `actionlint`.
 **Debugger :** `netcoredbg` (C#/.NET — ARM non supporté, voir troubleshooting).
 
-### 3. Claude CLI
+### 3. Claude Code & oh-my-pi
 
 ```sh
-claude auth login
+claude          # première fois : login navigateur
+omp             # première fois : /login pour configurer les providers
 ```
 
-L'alias `cc` (zsh) pointe sur ce binaire — il doit être dans le PATH avant.
-Le bootstrap installe Claude Code via l'installeur officiel natif
-(`curl -fsSL https://claude.ai/install.sh | bash` — ou `install.ps1` sous
-Windows). La méthode `npm install -g @anthropic-ai/claude-code` est
-aujourd'hui legacy.
+L'alias `cc` (zsh) pointe sur `claude`. Le bootstrap installe Claude Code via
+l'installeur officiel natif (`curl -fsSL https://claude.ai/install.sh | bash`
+— ou `install.ps1` sous Windows). La méthode `npm install -g @anthropic-ai/claude-code`
+est aujourd'hui legacy.
+
+`omp` lit nativement `~/.claude/commands/`, `~/.claude/agents/` et
+`~/.claude/CLAUDE.md` — pas besoin de dupliquer la conf.
 
 ### 4. Shell par défaut
 
@@ -156,19 +134,36 @@ chsh -s "$(which zsh)"
 
 ---
 
+## Maintenance au quotidien
+
+```sh
+dotfiles-update            # full pass (pkg + chezmoi + nvim + AI CLIs)
+dotfiles-update --quick    # uniquement chezmoi update + nvim Lazy sync
+dotfiles-update --no-pkg   # skip l'upgrade système (proxy capricieux)
+
+dotfiles-doctor            # check santé : binaires, nvim, chezmoi
+```
+
+Voir [`README.md`](../README.md#maintenance) pour le détail des étapes.
+
+---
+
 ## Vérification rapide
 
 ```sh
-# Outils shell
-for cmd in zsh git nvim chezmoi fzf zoxide rg fd bat eza starship atuin mise lazygit delta; do
+# Diagnostic intégré
+dotfiles-doctor
+
+# Manuel (si dotfiles-doctor n'est pas encore déployé)
+for cmd in zsh git nvim chezmoi fzf zoxide rg fd bat eza starship atuin mise lazygit delta claude omp; do
     command -v "$cmd" &>/dev/null && echo "✓ $cmd" || echo "✗ $cmd MANQUANT"
 done
 
 # Neovim
-nvim --headless -c "checkhealth" -c "qa"  # ou lancer :checkhealth dans nvim
+nvim --headless -c "checkhealth" -c "qa"
 
-# Police
-fc-list | grep -i jetbrains  # Linux seulement
+# Police (Linux uniquement)
+fc-list | grep -i jetbrains
 ```
 
 ---
@@ -190,4 +185,5 @@ fc-list | grep -i jetbrains  # Linux seulement
 | `atuin` | historique shell standard (moins puissant) |
 | `zoxide` | `cd` standard (pas de smart jump) |
 | `mise` | versions de runtime non gérées |
+| `claude` / `omp` | pas d'agent IA dans le terminal |
 | Nerd Font | icônes starship/lazygit/nvim cassées |

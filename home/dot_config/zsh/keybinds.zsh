@@ -28,8 +28,8 @@ bindkey '^N'      down-line-or-beginning-search
 # ── Word jumps on Ctrl-Left / Ctrl-Right ──────────────────────────────────
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
-bindkey '^[[1;3C' forward-word                  # macOS: Alt-Right
-bindkey '^[[1;3D' backward-word                 # macOS: Alt-Left
+bindkey '^[[1;3C' forward-word                  # Alt-Right (some terminals)
+bindkey '^[[1;3D' backward-word                 # Alt-Left  (some terminals)
 
 # ── Line edits ────────────────────────────────────────────────────────────
 bindkey '^U' backward-kill-line                 # default kills whole line; we want left half

@@ -39,3 +39,11 @@ age.key
 node_modules/
 .direnv/
 .cache/
+
+# ─── chezmoi source state — un-ignore against the user's global ignores ──
+# Some users have a global `~/.gitignore` rule like `bin/` to keep their
+# build outputs out of every repo. That accidentally hides our chezmoi
+# source state under `home/dot_local/bin/`, which is intentionally tracked
+# (it ships dotfiles-update / dotfiles-doctor). Force-include it.
+!home/dot_local/bin/
+!home/dot_local/bin/**

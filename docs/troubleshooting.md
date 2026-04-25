@@ -11,9 +11,8 @@ talk to it. Requirements:
 
 | OS                    | Required binary      | Install                                          |
 |-----------------------|----------------------|--------------------------------------------------|
-| macOS                 | `pbcopy` / `pbpaste` | built-in                                         |
-| Linux X11             | `xclip` or `xsel`    | `apt install xclip` / equivalent                 |
-| Linux Wayland         | `wl-copy` / `wl-paste` | `apt install wl-clipboard`                     |
+| Linux X11             | `xclip` or `xsel`    | `apt install xclip` / `pacman -S xclip`          |
+| Linux Wayland         | `wl-copy` / `wl-paste` | `apt install wl-clipboard` / `pacman -S wl-clipboard` |
 | Windows MSYS2         | `win32yank.exe`      | `scoop install win32yank` (bootstrap-windows.ps1 attempts this) |
 
 Check: `:checkhealth` inside nvim, look at the "Clipboard" section.
@@ -76,10 +75,12 @@ default of `MINGW64` (which is *not* what our config assumes).
 
 Nerd Font missing or the terminal isn't using it. Check:
 - WezTerm: `appearance.lua` sets `JetBrainsMono Nerd Font`; verify the
-  font is installed (`fc-list | grep -i jetbrains` on mac/linux, look
-  in "Fonts" control panel on Windows).
-- Reload the font cache: `fc-cache -fv` on linux, log out/in on macOS
-  after a `brew install --cask font-jetbrains-mono-nerd-font`.
+  font is installed (`fc-list | grep -i jetbrains` on Linux, look in
+  "Fonts" control panel on Windows).
+- Reload the font cache: `fc-cache -fv` on Linux. On Windows, the
+  bootstrap should have copied `.ttf` files into
+  `%LOCALAPPDATA%\Microsoft\Windows\Fonts` — log out/in if the font
+  picker still doesn't see them.
 
 ---
 
@@ -88,7 +89,7 @@ Nerd Font missing or the terminal isn't using it. Check:
 Zsh refuses to load completions from world-writable dirs. Fix:
 ```sh
 chmod go-w ~/.local/share/zsh/site-functions
-chmod go-w "$(brew --prefix)/share/zsh"
+chmod go-w /usr/share/zsh
 ```
 
 Or, if you *know* the dirs are safe (corporate shared drive where perms
@@ -124,7 +125,35 @@ re-run the bootstrap.
 Check in that order:
 - `git config --get core.pager` should return `delta`.
 - `command -v delta` must resolve; otherwise install it
-  (`brew install git-delta`, `scoop install delta`, or via cargo).
+  (`pacman -S git-delta`, `scoop install delta`, or via the GitHub
+  release `.deb` on Ubuntu).
 - If lazygit shows plain diffs but CLI `git diff` is colorised, the
   fault is in `lazygit/config.yml` — after the first run lazygit may
   have migrated `git.paging` into `git.pagers`, which is expected.
+
+---
+
+## `dotfiles-update` fails on `Lazy! sync` with a stderr warning
+
+Treesitter parser compilations write stderr noise even when they
+succeed. The script flags it as a warning but does not abort.
+
+If the actual sync failed (Lua error, missing C compiler), launch nvim
+interactively and run `:Lazy sync` to see the full output. On Ubuntu
+without `build-essential` installed, treesitter parsers won't compile —
+re-run the bootstrap or `apt install build-essential`.
+
+---
+
+## `omp` command not found after install
+
+The upstream installer drops the binary in `~/.local/bin/omp` (POSIX)
+or `%USERPROFILE%\.local\bin\omp.exe` (Windows). Verify:
+
+```sh
+ls ~/.local/bin/omp        # should exist
+echo $PATH | tr ':' '\n' | grep -F .local/bin   # should match
+```
+
+If the path is missing, open a fresh shell — `path.zsh` prepends
+`~/.local/bin` automatically on every interactive zsh.

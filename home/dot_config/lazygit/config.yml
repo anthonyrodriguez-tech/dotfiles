@@ -9,7 +9,7 @@
 #
 # Notes:
 #   • The `lg` alias is set in zsh/aliases.zsh.
-#   • Delta must be on PATH; install via brew/scoop/pacman in bootstrap.
+#   • Delta must be on PATH; install via scoop/pacman/apt in bootstrap.
 #   • `colorArg: always` is required, otherwise delta receives no color codes.
 # ─────────────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ git:
   autoFetch: true
   autoRefresh: true
 
-# Disable the "new version available" nag — chezmoi/Scoop/brew handle updates.
+# Disable the "new version available" nag — chezmoi/Scoop/pacman/apt handle updates.
 update:
   method: never
 

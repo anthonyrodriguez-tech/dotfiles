@@ -27,7 +27,7 @@ function M.apply(config, wezterm)
     config.line_height = 1.05
 
     -- ── Tab bar ──────────────────────────────────────────────────────────
-    -- Plain bar (not OS-native) so it looks identical across mac/linux/win.
+    -- Plain bar (not OS-native) so it looks identical across linux/win.
     config.use_fancy_tab_bar = false
     config.tab_bar_at_bottom = false
     config.hide_tab_bar_if_only_one_tab = true

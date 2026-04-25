@@ -30,7 +30,7 @@ zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*:warnings'     format 'No matches: %d'
 
-# Use the cache for slow completions (apt/dnf/brew/git).
+# Use the cache for slow completions (apt/pacman/scoop/git).
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/zsh/compcache"
 [[ -d "$XDG_CACHE_HOME/zsh/compcache" ]] || mkdir -p "$XDG_CACHE_HOME/zsh/compcache"

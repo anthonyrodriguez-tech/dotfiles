@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : One-shot maintenance pass — keeps every layer of the stack
+#         in sync (system packages, dotfiles, runtimes, nvim plugins,
+#         LSP/formatters, AI agents).
+# WHERE : home/dot_local/bin/executable_dotfiles-update
+#         → ~/.local/bin/dotfiles-update  (deployed by chezmoi)
+# WHY   : `chezmoi update` alone only refreshes the dotfile content; it
+#         does not bump LazyVim plugins, Mason packages, mise toolchain
+#         versions, or the AI CLIs. This script is the canonical
+#         "update everything" entry point.
+#
+# Usage:
+#   dotfiles-update                # full pass
+#   dotfiles-update --quick        # only chezmoi update + nvim Lazy sync
+#   dotfiles-update --no-pkg       # skip system package upgrade
+#   dotfiles-update --help
+#
+# Detects pacman / apt / scoop (the latter via MSYS2 calling out to
+# scoop.cmd on Windows) and routes accordingly.
+# ─────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+# ── Colour helpers (mirror scripts/common/lib.sh) ─────────────────────────
+if [ -t 1 ]; then
+    _C_RESET=$'\033[0m'; _C_BOLD=$'\033[1m'
+    _C_BLUE=$'\033[34m'; _C_GREEN=$'\033[32m'
+    _C_YELLOW=$'\033[33m'; _C_RED=$'\033[31m'
+else
+    _C_RESET=""; _C_BOLD=""; _C_BLUE=""; _C_GREEN=""; _C_YELLOW=""; _C_RED=""
+fi
+step() { printf '%s==> %s%s\n' "${_C_BOLD}${_C_BLUE}" "$*" "${_C_RESET}"; }
+ok()   { printf '%s  ✓ %s%s\n' "${_C_GREEN}" "$*" "${_C_RESET}"; }
+warn() { printf '%s  ! %s%s\n' "${_C_YELLOW}" "$*" "${_C_RESET}" >&2; }
+skip() { printf '%s  - %s (skipped — %s)%s\n' "${_C_YELLOW}" "$1" "$2" "${_C_RESET}"; }
+err()  { printf '%s  ✗ %s%s\n' "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# ── Args ──────────────────────────────────────────────────────────────────
+QUICK=0
+NO_PKG=0
+for arg in "$@"; do
+    case "$arg" in
+        --quick) QUICK=1 ;;
+        --no-pkg) NO_PKG=1 ;;
+        -h | --help)
+            sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        *)
+            err "unknown flag: $arg (try --help)"
+            exit 2
+            ;;
+    esac
+done
+
+SUDO=""
+if [ "$(id -u 2>/dev/null || echo 0)" -ne 0 ] && have sudo; then
+    SUDO="sudo"
+fi
+
+# ── Detect package manager ────────────────────────────────────────────────
+PM=""
+case "$(uname -s)" in
+    Linux)
+        if have pacman; then PM="pacman"
+        elif have apt-get; then PM="apt"
+        fi
+        ;;
+    MINGW* | MSYS* | CYGWIN*)
+        # On MSYS2 we update Scoop, not pacman (MSYS2 pacman is for the
+        # MSYS2 layer only and managed via the bootstrap, not daily ops).
+        if have scoop || [ -x "${USERPROFILE:-${HOME}}/scoop/shims/scoop.cmd" ]; then
+            PM="scoop"
+        fi
+        ;;
+esac
+
+# ── 1. System packages ────────────────────────────────────────────────────
+if [ "$QUICK" -eq 1 ] || [ "$NO_PKG" -eq 1 ]; then
+    skip "system packages" "--quick or --no-pkg"
+else
+    case "$PM" in
+        pacman)
+            step "pacman -Syu"
+            ${SUDO} pacman -Syu --noconfirm
+            ;;
+        apt)
+            step "apt update && upgrade"
+            ${SUDO} apt-get update
+            ${SUDO} apt-get upgrade -y
+            ;;
+        scoop)
+            step "scoop update *"
+            scoop update
+            scoop update '*' || warn "some scoop apps failed to update"
+            ;;
+        *)
+            warn "no supported package manager detected — skipping system upgrade"
+            ;;
+    esac
+fi
+
+# ── 2. chezmoi update (always runs, also in --quick) ──────────────────────
+step "chezmoi update"
+if have chezmoi; then
+    chezmoi update --apply
+else
+    warn "chezmoi not on PATH — skipping"
+fi
+
+# ── 3. mise upgrade (toolchain runtimes: node, python, go, ...) ───────────
+if [ "$QUICK" -eq 1 ]; then
+    skip "mise upgrade" "--quick"
+elif have mise; then
+    step "mise upgrade"
+    mise upgrade || warn "mise upgrade returned non-zero"
+else
+    skip "mise upgrade" "mise not installed"
+fi
+
+# ── 4. LazyVim plugins (always — cheap and value high) ────────────────────
+if have nvim; then
+    step "nvim — Lazy! sync"
+    nvim --headless "+Lazy! sync" +qa 2>/dev/null || warn "Lazy sync returned non-zero"
+else
+    skip "nvim Lazy sync" "nvim not installed"
+fi
+
+# ── 5. Mason packages (LSP / formatters / linters) ────────────────────────
+if [ "$QUICK" -eq 1 ]; then
+    skip "Mason update" "--quick"
+elif have nvim; then
+    step "nvim — MasonUpdate"
+    nvim --headless +MasonUpdate +qa 2>/dev/null || warn "MasonUpdate returned non-zero"
+fi
+
+# ── 6. AI CLIs (best-effort, skip on network errors) ──────────────────────
+if [ "$QUICK" -eq 1 ]; then
+    skip "AI CLI updates" "--quick"
+else
+    if have bun && have omp; then
+        step "omp — bun update -g"
+        bun update -g @oh-my-pi/pi-coding-agent || warn "omp update returned non-zero"
+    elif have omp; then
+        skip "omp update" "bun not installed (omp installed via binary — re-run upstream installer to upgrade)"
+    fi
+
+    if have claude; then
+        step "claude — self-update"
+        claude update 2>/dev/null || skip "claude update" "command not supported by this version"
+    fi
+fi
+
+# ── 7. zinit plugins (zsh) ────────────────────────────────────────────────
+if [ "$QUICK" -eq 1 ]; then
+    skip "zinit update" "--quick"
+else
+    ZINIT_HOME="${ZINIT_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git}"
+    if [ -d "${ZINIT_HOME}" ]; then
+        step "zinit self-update + plugin update"
+        zsh -ic 'zinit self-update && zinit update --all' 2>/dev/null ||
+            warn "zinit update returned non-zero (open a fresh zsh session if it's the first run)"
+    else
+        skip "zinit update" "not initialised yet"
+    fi
+fi
+
+step "done"
+ok "if anything changed in the dotfiles, open a new shell to pick it up"

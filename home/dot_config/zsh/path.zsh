@@ -16,15 +16,6 @@ path=(
 )
 
 case "$DOTFILES_OS" in
-    mac)
-        # Apple Silicon (M-series) ships brew under /opt/homebrew; Intel
-        # macs under /usr/local. Pick whichever exists.
-        if [[ -x /opt/homebrew/bin/brew ]]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        elif [[ -x /usr/local/bin/brew ]]; then
-            eval "$(/usr/local/bin/brew shellenv)"
-        fi
-        ;;
     linux)
         # Common per-language bin dirs — only prepend if they exist, to
         # avoid bloating $PATH on minimal containers.

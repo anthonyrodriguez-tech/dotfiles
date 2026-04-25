@@ -81,8 +81,8 @@ terminal `git diff`.
 | `Ctrl-N` / `↓`   | historique préfixé vers le bas              |
 | `Ctrl-←`         | mot précédent                               |
 | `Ctrl-→`         | mot suivant                                 |
-| `Alt-←`          | mot précédent (macOS)                       |
-| `Alt-→`          | mot suivant (macOS)                         |
+| `Alt-←`          | mot précédent (selon terminal)              |
+| `Alt-→`          | mot suivant (selon terminal)                |
 | `Ctrl-U`         | supprimer de la position au début de ligne  |
 | `Ctrl-K`         | supprimer de la position à la fin de ligne  |
 | `Ctrl-X Ctrl-E`  | ouvrir la ligne en cours dans `$EDITOR`     |
@@ -166,10 +166,26 @@ invoke `rg` directly.
 
 ---
 
-## Claude Code
+## Claude Code & oh-my-pi (`omp`)
 
 - `/review-pr [N]` — full PR review (diff + lint + tests), delegates
   Terraform to the `terraform-reviewer` subagent.
 - `cc` (zsh alias) launches Claude Code.
+- `omp` launches oh-my-pi — fork de pi-mono, agent IA terminal alternatif.
+  Lit nativement `~/.claude/commands/`, `~/.claude/agents/` et `~/.claude/CLAUDE.md`.
 
-After install: `claude auth login` once per machine.
+Premier lancement : `claude` puis `omp` (login navigateur / `/login`).
+
+---
+
+## Maintenance
+
+| Commande                  | Action                                                   |
+|---------------------------|----------------------------------------------------------|
+| `dotfiles-update`         | Full pass : pkg + chezmoi + nvim + Mason + AI CLIs       |
+| `dotfiles-update --quick` | chezmoi update + nvim Lazy sync uniquement               |
+| `dotfiles-update --no-pkg`| Skip l'upgrade système (proxy capricieux)                |
+| `dotfiles-doctor`         | Health check : binaires, nvim startup, chezmoi diagnostics |
+| `dotfiles-doctor --quiet` | N'affiche que les problèmes (CI-friendly)                |
+
+Sous PowerShell natif : `dotfiles-update.ps1`, `dotfiles-doctor.ps1`.
