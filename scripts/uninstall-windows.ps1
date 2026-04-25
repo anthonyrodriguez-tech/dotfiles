@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────
 # WHAT  : Windows uninstall — reverses bootstrap-windows.ps1.
 # WHERE : scripts/uninstall-windows.ps1
 # WHY   : Clean recovery from a broken bootstrap, or full removal when the
