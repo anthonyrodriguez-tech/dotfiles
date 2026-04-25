@@ -33,15 +33,17 @@ case "$DOTFILES_OS" in
         [[ -d "$HOME/go/bin" ]]          && path=("$HOME/go/bin" $path)
         ;;
     windows)
-        # MSYS2 sets up its own /usr/bin layout; Scoop apps live under
-        # %USERPROFILE%/scoop/shims, which Scoop already exports. Nothing
-        # to add here. Documented for the next reader.
-        :
+        # MSYS2's login shell does NOT inherit the Windows PATH reliably.
+        # Explicitly prepend the Scoop shim directory so nvim, starship,
+        # lazygit, etc. are available inside the terminal.
+        [[ -d "$HOME/scoop/shims" ]] && path=("$HOME/scoop/shims" $path)
         ;;
 esac
 
 # mise (universal version manager) — must come AFTER all static $PATH edits
 # so its shims sit at the front and shadow any system `node`/`python`.
-if command -v mise >/dev/null 2>&1; then
+# On Windows/MSYS2, mise outputs Windows-style paths (C:\...) that zsh
+# cannot parse, so skip activation there.
+if [[ "$DOTFILES_OS" != windows ]] && command -v mise >/dev/null 2>&1; then
     eval "$(mise activate zsh)"
 fi

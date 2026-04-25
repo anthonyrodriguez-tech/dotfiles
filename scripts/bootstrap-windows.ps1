@@ -136,6 +136,15 @@ try { Invoke-Msys2 'pacman -Syu --noconfirm' } catch {
 Invoke-Msys2 'pacman -Syu --noconfirm'
 Invoke-Msys2 'pacman -S --noconfirm --needed zsh git curl coreutils grep sed tar unzip'
 
+# Point MSYS2 $HOME at the Windows profile directory so zsh finds the
+# dotfiles that chezmoi deploys to %USERPROFILE% (e.g. .zshenv, .zshrc).
+$nsswitch = Join-Path $env:USERPROFILE 'scoop\apps\msys2\current\etc\nsswitch.conf'
+if (Test-Path $nsswitch) {
+    (Get-Content $nsswitch) -replace 'db_home:\s+cygwin\b.*', 'db_home: windows' |
+        Set-Content $nsswitch
+    Write-Ok 'MSYS2 db_home set to windows'
+}
+
 # win32yank — clipboard bridge used by neovim inside MSYS2. If scoop has
 # one, great; otherwise MSYS2 provides wl-clipboard-equivalent handling
 # via the built-in clip.exe passthrough on Windows.
