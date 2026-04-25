@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Tony/**)",
+      "Read(//home/Tony/**)",
+      "Bash(echo $HOME)",
+      "Bash(command -v actionlint)",
+      "Bash(actionlint -color .github/workflows/bootstrap-windows-e2e.yml .github/workflows/ci.yml)",
+      "PowerShell(ConvertFrom-Yaml *)"
+    ]
+  }
+}

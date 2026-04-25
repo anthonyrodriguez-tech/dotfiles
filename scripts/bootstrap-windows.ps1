@@ -16,15 +16,13 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 #Requires -Version 5.1
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Intentional: colorised output in a bootstrap script')]
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Intentional: Scoop official installer requires iex')]
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseBOMForUnicodeEncodedFile', '', Justification = 'Decorative ASCII-art in comments; file is UTF-8 without BOM by design')]
-[CmdletBinding()]
-param(
-    [string]$RepoUrl = $(if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/anthonyrodriguez-tech/dotfiles.git' })
-)
 
+# No param() / [CmdletBinding()] block: those are illegal when the script is
+# evaluated inline via `irm <url> | iex` (Invoke-Expression doesn't accept
+# them). Configure via $env:DOTFILES_REPO before running instead.
 $ErrorActionPreference = 'Stop'
+
+$RepoUrl = if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/anthonyrodriguez-tech/dotfiles.git' }
 
 function Write-Step { param([string]$Msg) Write-Host "==> $Msg" -ForegroundColor Blue }
 function Write-Ok   { param([string]$Msg) Write-Host "  v $Msg"  -ForegroundColor Green }
@@ -151,8 +149,7 @@ $scoopPackages = @(
     'git', 'chezmoi', 'neovim', 'lazygit', 'delta', 'starship',
     'fzf', 'ripgrep', 'fd', 'bat', 'eza', 'zoxide',
     'gh', 'jq', 'yq', 'mise', 'atuin',
-    'msys2', 'wezterm',
-    'JetBrainsMono-NF'     # nerd-fonts bucket: registers the Nerd Font variant
+    'msys2', 'wezterm'
 )
 
 Write-Step 'Scoop packages'
@@ -160,6 +157,40 @@ foreach ($p in $scoopPackages) {
     if ($p -eq 'msys2') { Repair-Msys2Install }
     Invoke-WithRetry { scoop install $p }
 }
+
+# Fonts are installed separately and best-effort. The nerd-fonts installer
+# Copy-Items into %LOCALAPPDATA%\Microsoft\Windows\Fonts, which fails with
+# IOException when WezTerm/Office/Explorer has any glyph open — and retrying
+# can't clear the lock. The font is "functionally installed" if the .ttf
+# files exist on disk regardless of what scoop's exit code says.
+function Install-NerdFont {
+    param([string]$ScoopName, [string]$FilePattern)
+    $userFonts = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+    $alreadyDeployed = {
+        (Test-Path $userFonts) -and
+        (Get-ChildItem -Path $userFonts -Filter $FilePattern -ErrorAction SilentlyContinue).Count -gt 0
+    }
+    if (& $alreadyDeployed) {
+        Write-Ok "$ScoopName already deployed in user fonts dir — skipping scoop install"
+        return
+    }
+    try {
+        scoop install $ScoopName
+        Write-Ok $ScoopName
+    }
+    catch {
+        if (& $alreadyDeployed) {
+            Write-Warn "${ScoopName}: scoop hit a file lock but glyph files are deployed — continuing."
+        }
+        else {
+            Write-Warn "$ScoopName install failed ($($_.Exception.Message.Split([Environment]::NewLine)[0]))."
+            Write-Warn 'Close WezTerm/Office/Explorer windows and re-run, or install the font manually. Bootstrap will continue.'
+        }
+    }
+}
+
+Write-Step 'Nerd Fonts (best-effort)'
+Install-NerdFont -ScoopName 'JetBrainsMono-NF' -FilePattern 'JetBrainsMono*NerdFont*.ttf'
 
 # ── 4. MSYS2 package install ──────────────────────────────────────────────
 # scoop installs msys2 under ~/scoop/apps/msys2/current. First run needs a
@@ -218,14 +249,24 @@ else {
 }
 
 # ── 6. chezmoi init --apply ───────────────────────────────────────────────
-Write-Step "chezmoi init --apply $RepoUrl"
-$chezmoiStateDir = Join-Path $env:USERPROFILE '.local\share\chezmoi'
-$chezmoiCfgDir   = Join-Path $env:USERPROFILE '.config\chezmoi'
-if ((Test-Path $chezmoiStateDir) -or (Test-Path $chezmoiCfgDir)) {
-    chezmoi apply --verbose
+# DOTFILES_BOOTSTRAP_SKIP_CHEZMOI=1 stops here. Two callers want this:
+#   - CI: chezmoi init prompts for email/name/profile and the bootstrap
+#     doesn't pre-answer them; templates are validated by a separate job.
+#   - Users who only want the Scoop+MSYS2 binaries on a corporate machine
+#     and intend to set up chezmoi by hand.
+if ($env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI) {
+    Write-Step 'chezmoi (skipped — DOTFILES_BOOTSTRAP_SKIP_CHEZMOI is set)'
 }
 else {
-    chezmoi init --apply $RepoUrl
+    Write-Step "chezmoi init --apply $RepoUrl"
+    $chezmoiStateDir = Join-Path $env:USERPROFILE '.local\share\chezmoi'
+    $chezmoiCfgDir   = Join-Path $env:USERPROFILE '.config\chezmoi'
+    if ((Test-Path $chezmoiStateDir) -or (Test-Path $chezmoiCfgDir)) {
+        chezmoi apply --verbose
+    }
+    else {
+        chezmoi init --apply $RepoUrl
+    }
 }
 
 # ── 7. Post-install ───────────────────────────────────────────────────────

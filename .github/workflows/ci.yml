@@ -38,10 +38,27 @@ jobs:
 
   # ── PowerShell ────────────────────────────────────────────────────────
   powershell:
-    name: PSScriptAnalyzer
+    name: parse + PSScriptAnalyzer
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The bootstrap is documented as `irm <url> | iex`. Invoke-Expression
+      # evaluates the body inline, which forbids `param()` / `[CmdletBinding()]`
+      # at the top of the script. Compiling the source as a script block here
+      # is the same syntactic check iex performs — fails fast on regressions.
+      - name: iex-compat parse check
+        shell: pwsh
+        run: |
+          $src = Get-Content -Raw scripts/bootstrap-windows.ps1
+          try {
+              $null = [scriptblock]::Create($src)
+              Write-Host "OK: bootstrap-windows.ps1 compiles as a script block (irm | iex compatible)."
+          }
+          catch {
+              Write-Host "FAIL: $($_.Exception.Message)"
+              exit 1
+          }
 
       - name: Run PSScriptAnalyzer
         shell: pwsh

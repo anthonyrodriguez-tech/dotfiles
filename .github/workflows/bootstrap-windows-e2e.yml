@@ -1,0 +1,141 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : Bootstrap (Windows) — clean install on a fresh runner.
+# WHERE : .github/workflows/bootstrap-windows-e2e.yml
+# WHY   : The static checks in ci.yml catch parse / lint regressions, but
+#         not "scoop bucket renamed", "msys2 install path moved", or any
+#         of the actual install-time failure modes. This workflow runs
+#         the script end-to-end on a clean Windows runner so we get a
+#         signal *before* a user pastes the one-liner.
+#
+# Notes:
+#   - Scoop refuses to install when the session is in the Administrators
+#     group. The GitHub runner user IS in Administrators, so we create a
+#     dedicated non-admin user (`btest`) and run the script as that user
+#     via `Start-Process -Credential`.
+#   - chezmoi init prompts for email/name/profile. The bootstrap doesn't
+#     pre-answer those, and we validate templates in ci.yml's chezmoi
+#     matrix job already, so we set DOTFILES_BOOTSTRAP_SKIP_CHEZMOI=1 to
+#     stop after the binaries are installed.
+#   - Triggered manually + on changes to the script or this workflow.
+#     Not on every PR: a clean run takes ~15 min (msys2 pacman -Syu is
+#     the slow part).
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Bootstrap (Windows) — clean install
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/bootstrap-windows.ps1'
+      - '.github/workflows/bootstrap-windows-e2e.yml'
+  pull_request:
+    paths:
+      - 'scripts/bootstrap-windows.ps1'
+      - '.github/workflows/bootstrap-windows-e2e.yml'
+
+concurrency:
+  group: bootstrap-windows-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clean-install:
+    name: Run as non-admin user
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create non-admin test user
+        shell: pwsh
+        run: |
+          $pw = ConvertTo-SecureString 'Bootstrap-CI-Pass!1' -AsPlainText -Force
+          New-LocalUser -Name btest -Password $pw -PasswordNeverExpires | Out-Null
+          Add-LocalGroupMember -Group Users -Member btest
+          icacls $env:GITHUB_WORKSPACE /grant 'btest:(OI)(CI)(RX)' /T | Out-Null
+
+          # Force-create btest's profile directory so the bootstrap can
+          # write to %USERPROFILE% on first run. Without this the first
+          # Start-Process -Credential creates the profile lazily and
+          # races against the script's early file writes.
+          $cred = New-Object PSCredential('btest', $pw)
+          $p = Start-Process powershell -PassThru -Wait `
+            -Credential $cred -LoadUserProfile `
+            -ArgumentList '-NoProfile','-Command','exit'
+          if ($p.ExitCode -ne 0) { throw "profile init exited $($p.ExitCode)" }
+
+      - name: Run bootstrap as btest
+        shell: pwsh
+        run: |
+          $pw = ConvertTo-SecureString 'Bootstrap-CI-Pass!1' -AsPlainText -Force
+          $cred = New-Object PSCredential('btest', $pw)
+          $log = Join-Path $env:RUNNER_TEMP 'bootstrap.log'
+
+          # Wrapper script: sets the skip-chezmoi env var inside btest's
+          # session and tees output to a log the parent can read.
+          # Start-Process -Credential's RedirectStandardOutput is flaky
+          # across user boundaries; an in-child Tee-Object is reliable.
+          $wrap = @"
+`$env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI = '1'
+& '$env:GITHUB_WORKSPACE\scripts\bootstrap-windows.ps1' *>&1 |
+    Tee-Object -FilePath '$log'
+exit `$LASTEXITCODE
+"@
+          $wrapPath = Join-Path $env:RUNNER_TEMP 'wrap.ps1'
+          Set-Content -Path $wrapPath -Value $wrap -Encoding UTF8
+          icacls $wrapPath /grant 'btest:(RX)' | Out-Null
+
+          # Run under Windows PowerShell 5.1 (powershell.exe), not pwsh,
+          # to mirror the real corporate-laptop environment where the
+          # one-liner gets pasted.
+          $p = Start-Process powershell -PassThru -Wait `
+            -Credential $cred -LoadUserProfile `
+            -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$wrapPath
+
+          if (Test-Path $log) { Get-Content $log }
+          if ($p.ExitCode -ne 0) { throw "bootstrap exited $($p.ExitCode)" }
+
+      - name: Verify binaries on btest's PATH
+        shell: pwsh
+        run: |
+          $pw = ConvertTo-SecureString 'Bootstrap-CI-Pass!1' -AsPlainText -Force
+          $cred = New-Object PSCredential('btest', $pw)
+          $log = Join-Path $env:RUNNER_TEMP 'verify.log'
+
+          $check = @'
+$env:PATH = [Environment]::GetEnvironmentVariable('PATH','User') + ';' +
+            [Environment]::GetEnvironmentVariable('PATH','Machine')
+$bins = 'scoop','chezmoi','wezterm','starship','rg','fd','bat','eza','zoxide','gh','jq','mise','atuin','nvim','lazygit','delta','fzf'
+$missing = @()
+foreach ($b in $bins) {
+    if (Get-Command $b -ErrorAction SilentlyContinue) { Write-Host "OK   $b" }
+    else { Write-Host "MISS $b"; $missing += $b }
+}
+$bash = Join-Path $env:USERPROFILE 'scoop\apps\msys2\current\usr\bin\bash.exe'
+if (Test-Path $bash) { Write-Host 'OK   msys2-bash' }
+else                 { Write-Host 'MISS msys2-bash'; $missing += 'msys2-bash' }
+if ($missing.Count -gt 0) {
+    Write-Host "missing: $($missing -join ', ')"
+    exit 1
+}
+'@
+          $checkPath = Join-Path $env:RUNNER_TEMP 'verify.ps1'
+          Set-Content -Path $checkPath -Value $check -Encoding UTF8
+          icacls $checkPath /grant 'btest:(RX)' | Out-Null
+
+          $p = Start-Process powershell -PassThru -Wait `
+            -Credential $cred -LoadUserProfile `
+            -ArgumentList '-NoProfile','-NonInteractive','-File',$checkPath `
+            -RedirectStandardOutput $log
+
+          if (Test-Path $log) { Get-Content $log }
+          if ($p.ExitCode -ne 0) { throw 'verify failed — see log above' }
+
+      - name: Upload bootstrap log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-log
+          path: ${{ runner.temp }}\bootstrap.log
+          if-no-files-found: ignore
