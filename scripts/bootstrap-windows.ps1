@@ -21,7 +21,7 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseBOMForUnicodeEncodedFile', '', Justification = 'Decorative ASCII-art in comments; file is UTF-8 without BOM by design')]
 [CmdletBinding()]
 param(
-    [string]$RepoUrl = $(if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/tony/dotfiles.git' })
+    [string]$RepoUrl = $(if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/anthonyrodriguez-tech/dotfiles.git' })
 )
 
 $ErrorActionPreference = 'Stop'
