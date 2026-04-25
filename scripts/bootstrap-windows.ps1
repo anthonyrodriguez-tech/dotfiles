@@ -33,6 +33,28 @@ function Write-Err  { param([string]$Msg) Write-Host "  x $Msg"  -ForegroundColo
 
 function Test-Cmd { param([string]$Name) [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
+function Invoke-WithRetry {
+    param([scriptblock]$Action, [int]$MaxAttempts = 3, [int]$DelaySec = 10)
+    for ($i = 1; $i -le $MaxAttempts; $i++) {
+        try { & $Action; return } catch {
+            if ($i -eq $MaxAttempts) { throw }
+            Write-Warn "attempt $i/$MaxAttempts failed — retrying in ${DelaySec}s"
+            Start-Sleep -Seconds $DelaySec
+        }
+    }
+}
+
+function Repair-ScoopBucket {
+    param([string]$Name)
+    $bucketPath = Join-Path $env:USERPROFILE "scoop\buckets\$Name"
+    if ((Test-Path $bucketPath) -and -not (Test-Path (Join-Path $bucketPath '.git'))) {
+        Write-Warn "bucket $Name is corrupted — removing and re-adding"
+        scoop bucket rm $Name 2>$null
+    }
+    scoop bucket add $Name 2>$null
+    Write-Ok "bucket $Name"
+}
+
 # Fail early if we're somehow running elevated — the whole point of this
 # script is to work for a non-admin user. Scoop explicitly refuses elevated
 # installs and mixing admin/user Scoop state is a known footgun.
@@ -63,8 +85,7 @@ $env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'User') + ';' + [Envir
 # `scoop bucket add` errors if the bucket already exists — swallow that.
 Write-Step 'Scoop buckets'
 foreach ($b in @('main', 'extras', 'nerd-fonts')) {
-    scoop bucket add $b 2>$null
-    Write-Ok "bucket ${b}"
+    Repair-ScoopBucket $b
 }
 
 # ── 3. Scoop packages ─────────────────────────────────────────────────────
@@ -77,12 +98,12 @@ $scoopPackages = @(
     'fzf', 'ripgrep', 'fd', 'bat', 'eza', 'zoxide',
     'gh', 'jq', 'yq', 'mise', 'atuin',
     'msys2', 'wezterm',
-    'JetBrains-Mono-NF'    # nerd-fonts bucket: registers the Nerd Font variant
+    'JetBrainsMono-NF'     # nerd-fonts bucket: registers the Nerd Font variant
 )
 
 Write-Step 'Scoop packages'
 foreach ($p in $scoopPackages) {
-    scoop install $p
+    Invoke-WithRetry { scoop install $p }
 }
 
 # ── 4. MSYS2 package install ──────────────────────────────────────────────
@@ -107,7 +128,12 @@ function Invoke-Msys2 {
     }
 }
 
-Invoke-Msys2 'pacman -Syu --noconfirm || true'   # first sync may ask to restart
+# First pass may kill its own process when msys2-runtime upgrades — that's
+# expected behaviour. Swallow the error and run a second pass to finish.
+try { Invoke-Msys2 'pacman -Syu --noconfirm' } catch {
+    Write-Warn 'MSYS2 first-pass ended early (msys2-runtime upgrade) — running second pass'
+}
+Invoke-Msys2 'pacman -Syu --noconfirm'
 Invoke-Msys2 'pacman -S --noconfirm --needed zsh git curl coreutils grep sed tar unzip'
 
 # win32yank — clipboard bridge used by neovim inside MSYS2. If scoop has
