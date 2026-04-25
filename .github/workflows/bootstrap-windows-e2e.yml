@@ -76,12 +76,12 @@ jobs:
           # session and tees output to a log the parent can read.
           # Start-Process -Credential's RedirectStandardOutput is flaky
           # across user boundaries; an in-child Tee-Object is reliable.
-          $wrap = @"
-$env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI = '1'
-& '$env:GITHUB_WORKSPACE\scripts\bootstrap-windows.ps1' *>&1 |
-    Tee-Object -FilePath '$log'
-exit `$LASTEXITCODE
-"@
+          $wrap = "
+            `$env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI = '1'
+            & '$env:GITHUB_WORKSPACE\scripts\bootstrap-windows.ps1' *>&1 |
+              Tee-Object -FilePath '$log'
+            exit `$LASTEXITCODE
+          "
           $wrapPath = Join-Path $env:RUNNER_TEMP 'wrap.ps1'
           Set-Content -Path $wrapPath -Value $wrap -Encoding UTF8
           icacls $wrapPath /grant 'btest:(RX)' | Out-Null
@@ -103,23 +103,23 @@ exit `$LASTEXITCODE
           $cred = New-Object PSCredential('btest', $pw)
           $log = Join-Path $env:RUNNER_TEMP 'verify.log'
 
-          $check = @'
-$env:PATH = [Environment]::GetEnvironmentVariable('PATH','User') + ';' +
-            [Environment]::GetEnvironmentVariable('PATH','Machine')
-$bins = 'scoop','chezmoi','wezterm','starship','rg','fd','bat','eza','zoxide','gh','jq','mise','atuin','nvim','lazygit','delta','fzf'
-$missing = @()
-foreach ($b in $bins) {
-    if (Get-Command $b -ErrorAction SilentlyContinue) { Write-Host "OK   $b" }
-    else { Write-Host "MISS $b"; $missing += $b }
-}
-$bash = Join-Path $env:USERPROFILE 'scoop\apps\msys2\current\usr\bin\bash.exe'
-if (Test-Path $bash) { Write-Host 'OK   msys2-bash' }
-else                 { Write-Host 'MISS msys2-bash'; $missing += 'msys2-bash' }
-if ($missing.Count -gt 0) {
-    Write-Host "missing: $($missing -join ', ')"
-    exit 1
-}
-'@
+          $check = "
+            `$env:PATH = [Environment]::GetEnvironmentVariable('PATH','User') + ';' +
+                        [Environment]::GetEnvironmentVariable('PATH','Machine')
+            `$bins = 'scoop','chezmoi','wezterm','starship','rg','fd','bat','eza','zoxide','gh','jq','mise','atuin','nvim','lazygit','delta','fzf'
+            `$missing = @()
+            foreach (`$b in `$bins) {
+                if (Get-Command `$b -ErrorAction SilentlyContinue) { Write-Host `"OK   `$b`" }
+                else { Write-Host `"MISS `$b`"; `$missing += `$b }
+            }
+            `$bash = Join-Path `$env:USERPROFILE 'scoop\apps\msys2\current\usr\bin\bash.exe'
+            if (Test-Path `$bash) { Write-Host 'OK   msys2-bash' }
+            else                 { Write-Host 'MISS msys2-bash'; `$missing += 'msys2-bash' }
+            if (`$missing.Count -gt 0) {
+                Write-Host `"missing: `$(`$missing -join ', ')`"
+                exit 1
+            }
+          "
           $checkPath = Join-Path $env:RUNNER_TEMP 'verify.ps1'
           Set-Content -Path $checkPath -Value $check -Encoding UTF8
           icacls $checkPath /grant 'btest:(RX)' | Out-Null
