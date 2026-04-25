@@ -55,6 +55,40 @@ function Repair-ScoopBucket {
     Write-Ok "bucket $Name"
 }
 
+# A previous failed scoop install can leave a partial msys2 dir whose files
+# are held open by stray bash/mintty/gpg-agent/dirmngr processes. Scoop then
+# loops forever ("Couldn't remove ... it may be in use"). Detect that state,
+# kill the holders, and wipe the dir so the next `scoop install msys2` works.
+function Repair-Msys2Install {
+    $msys2Root = Join-Path $env:USERPROFILE 'scoop\apps\msys2'
+    if (-not (Test-Path $msys2Root)) { return }
+    if (Test-Path (Join-Path $msys2Root 'current\usr\bin\bash.exe')) { return }
+
+    Write-Warn 'MSYS2 install looks partial — clearing locks before retry'
+
+    $stuck = Get-Process | Where-Object {
+        $_.Path -and $_.Path.StartsWith($msys2Root, [StringComparison]::OrdinalIgnoreCase)
+    }
+    foreach ($p in $stuck) {
+        Write-Warn ("stopping {0} (pid {1})" -f $p.ProcessName, $p.Id)
+    }
+    $stuck | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # Daemons whose .Path may be null but still hold locks
+    Get-Process bash, mintty, gpg-agent, dirmngr, pacman, msys2 -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+
+    Start-Sleep -Seconds 1
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $msys2Root
+
+    if (Test-Path $msys2Root) {
+        Write-Warn "could not fully remove $msys2Root — close any WezTerm/VS Code terminals and re-run"
+    }
+    else {
+        Write-Ok 'cleaned up partial MSYS2 install'
+    }
+}
+
 # Fail early if we're somehow running elevated — the whole point of this
 # script is to work for a non-admin user. Scoop explicitly refuses elevated
 # installs and mixing admin/user Scoop state is a known footgun.
@@ -103,6 +137,7 @@ $scoopPackages = @(
 
 Write-Step 'Scoop packages'
 foreach ($p in $scoopPackages) {
+    if ($p -eq 'msys2') { Repair-Msys2Install }
     Invoke-WithRetry { scoop install $p }
 }
 
