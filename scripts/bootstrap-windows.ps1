@@ -75,17 +75,37 @@ function Repair-Msys2Install {
     $stuck | Stop-Process -Force -ErrorAction SilentlyContinue
 
     # Daemons whose .Path may be null but still hold locks
-    Get-Process bash, mintty, gpg-agent, dirmngr, pacman, msys2 -ErrorAction SilentlyContinue |
+    Get-Process bash, sh, zsh, mintty, gpg-agent, dirmngr, pacman, msys2 `
+        -ErrorAction SilentlyContinue |
         Stop-Process -Force -ErrorAction SilentlyContinue
 
     Start-Sleep -Seconds 1
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $msys2Root
-
-    if (Test-Path $msys2Root) {
-        Write-Warn "could not fully remove $msys2Root — close any WezTerm/VS Code terminals and re-run"
-    }
-    else {
+    if (-not (Test-Path $msys2Root)) {
         Write-Ok 'cleaned up partial MSYS2 install'
+        return
+    }
+
+    # Rename-then-delete. NTFS lets you rename a dir even when files inside
+    # are locked (Defender scan, Search Indexer, a stray editor with a handle
+    # we couldn't trace), which frees the canonical path for scoop's fresh
+    # install. The shadow dir is best-effort: if its files are still locked
+    # we leave it for the user to delete after a reboot rather than letting
+    # scoop hang on the locked path.
+    $shadow = "$msys2Root.broken-$([Guid]::NewGuid().ToString('N').Substring(0,8))"
+    try {
+        [IO.Directory]::Move($msys2Root, $shadow)
+        Write-Ok "renamed locked dir to $shadow — fresh install can proceed"
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $shadow
+        if (Test-Path $shadow) {
+            Write-Warn "$shadow still has locked files — delete it manually after a reboot"
+        }
+        return
+    }
+    catch {
+        Write-Err "Cannot reclaim $msys2Root — even rename failed ($($_.Exception.Message))."
+        Write-Err 'Close ALL WezTerm / VS Code / Cursor / nvim / claude windows and re-run, or reboot.'
+        exit 1
     }
 }
 
