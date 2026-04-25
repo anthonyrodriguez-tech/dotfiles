@@ -24,10 +24,35 @@ $ErrorActionPreference = 'Stop'
 
 $RepoUrl = if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/anthonyrodriguez-tech/dotfiles.git' }
 
-function Write-Step { param([string]$Msg) Write-Host "==> $Msg" -ForegroundColor Blue }
-function Write-Ok   { param([string]$Msg) Write-Host "  v $Msg"  -ForegroundColor Green }
-function Write-Warn { param([string]$Msg) Write-Host "  ! $Msg"  -ForegroundColor Yellow }
-function Write-Err  { param([string]$Msg) Write-Host "  x $Msg"  -ForegroundColor Red }
+# Write-Host is intentional: this script runs interactively in a terminal
+# where colour cues matter, and Write-Output would mix into the pipeline.
+# Suppress at function scope rather than script-top-level so the rule still
+# fires on accidental Write-Host elsewhere in the file.
+function Write-Step {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Coloured bootstrap output')]
+    param([string]$Msg) Write-Host "==> $Msg" -ForegroundColor Blue
+}
+function Write-Ok {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Coloured bootstrap output')]
+    param([string]$Msg) Write-Host "  v $Msg" -ForegroundColor Green
+}
+function Write-Warn {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Coloured bootstrap output')]
+    param([string]$Msg) Write-Host "  ! $Msg" -ForegroundColor Yellow
+}
+function Write-Err {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Coloured bootstrap output')]
+    param([string]$Msg) Write-Host "  x $Msg" -ForegroundColor Red
+}
+
+# Both upstream installers (Scoop, Claude Code) ship a `irm | iex` pattern
+# that we have no choice but to honour. Wrap in one helper so the rule
+# suppression is scoped to this single function.
+function Invoke-RemoteInstaller {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Upstream Scoop / Claude installers are designed for iex')]
+    param([string]$Uri)
+    Invoke-RestMethod -Uri $Uri | Invoke-Expression
+}
 
 function Test-Cmd { param([string]$Name) [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
