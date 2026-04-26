@@ -33,3 +33,8 @@ export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/ripgreprc"
 # Less history at the right spot.
 export LESSHISTFILE="$XDG_STATE_HOME/less/history"
 [[ -d "${LESSHISTFILE:h}" ]] || mkdir -p "${LESSHISTFILE:h}"
+
+# SOPS + age — the private key is local-only (never tracked), but pinning
+# the path here means every shell, every editor, every CI invocation looks
+# in the same spot. `dotfiles-keygen-age` creates the keyfile if missing.
+export SOPS_AGE_KEY_FILE="$XDG_CONFIG_HOME/sops/age/keys.txt"

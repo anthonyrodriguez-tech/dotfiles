@@ -93,7 +93,32 @@ dotfiles-doctor --quiet    # only show problems (good for CI)
 
 dotfiles-config            # re-run the gum TUI (change editors / tools / profile)
 dotfiles-config --no-apply # only rewrite chezmoi.toml, do not run chezmoi apply
+
+dotfiles-keygen-age        # bootstrap an age keypair for SOPS (one-time)
+dotfiles-keygen-age --pub  # re-print the public key (paste into .sops.yaml)
 ```
+
+### DevOps tools
+
+Le TUI propose une matrice large : `kubectl`, `helm`, `k9s`, `kustomize`,
+`argocd`, `terraform`, `terragrunt`, `ansible`, `sops`, `age`, `aws`, `az`,
+`gcloud`. Quand un outil n'a pas de paquet vanilla sur l'OS courant
+(beaucoup d'entre eux sur Ubuntu/Arch), le hook d'install bascule
+automatiquement sur **mise** (cf. `[mise_plugins]` dans
+`home/.chezmoidata.toml`) — un seul flow, peu importe la distro.
+
+### Secrets — SOPS + age
+
+```sh
+dotfiles-keygen-age                                  # crée ~/.config/sops/age/keys.txt
+cp ~/.local/share/dotfiles/examples/sops.yaml .sops.yaml  # exemple à éditer
+$EDITOR .sops.yaml                                    # ajouter la clé publique
+sops secrets.enc.yaml                                 # édite chiffré
+```
+
+`SOPS_AGE_KEY_FILE` est exporté par `home/dot_config/zsh/env.zsh`. La clé
+privée n'est jamais trackée — elle vit dans `~/.config/sops/age/keys.txt`
+(chmod 600). À sauvegarder hors-machine (1Password, USB chiffré).
 
 On Windows, `dotfiles-update.ps1` and `dotfiles-doctor.ps1` are also deployed
 for users who live in PowerShell instead of MSYS2 zsh.

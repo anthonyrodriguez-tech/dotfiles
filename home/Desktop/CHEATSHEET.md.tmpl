@@ -122,6 +122,229 @@ CLI : `code .` (ouvrir le dossier courant) · `code --install-extension <id>` (e
 
 {{- end }}
 
+{{- if or (has "kubectl" .tools) (has "helm" .tools) (has "k9s" .tools) (has "kustomize" .tools) (has "argocd" .tools) }}
+
+## Kubernetes & GitOps
+
+{{- if has "kubectl" .tools }}
+
+### kubectl
+
+| Commande                                  | Effet                              |
+|-------------------------------------------|------------------------------------|
+| `kubectl config get-contexts`             | Liste les clusters configurés      |
+| `kubectl config use-context <name>`       | Switch de cluster                  |
+| `kubectl get pods -A`                     | Tous les pods, tous les namespaces |
+| `kubectl logs -f <pod> -n <ns>`           | Stream les logs                    |
+| `kubectl exec -it <pod> -n <ns> -- sh`    | Shell dans un pod                  |
+| `kubectl describe pod <pod> -n <ns>`      | Détails + événements               |
+| `kubectl apply -f <file>`                 | Apply un manifest                  |
+| `kubectl delete -f <file>`                | Supprime les ressources d'un manifest |
+
+Aliases pratiques (à mettre dans `~/.config/zsh/local.zsh`) : `alias k=kubectl`, `alias kgp='kubectl get pods'`.
+{{- end }}
+
+{{- if has "helm" .tools }}
+
+### Helm
+
+| Commande                              | Effet                          |
+|---------------------------------------|--------------------------------|
+| `helm repo add <name> <url>`          | Ajoute un repo de charts       |
+| `helm repo update`                    | MAJ des charts                 |
+| `helm search repo <term>`             | Recherche un chart             |
+| `helm install <release> <chart>`      | Install une release            |
+| `helm upgrade --install <r> <c>`      | Upgrade ou install (idempotent)|
+| `helm list -A`                        | Liste les releases             |
+| `helm template <r> <c> -f vals.yaml`  | Render sans appliquer          |
+{{- end }}
+
+{{- if has "k9s" .tools }}
+
+### k9s
+
+`k9s` lance le TUI. Une fois dedans :
+
+| Touche       | Action                                  |
+|--------------|-----------------------------------------|
+| `:pods`      | Vue des pods                            |
+| `:ns`        | Liste des namespaces                    |
+| `:ctx`       | Liste des contextes                     |
+| `/`          | Filtre                                  |
+| `l`          | Logs du pod sélectionné                 |
+| `s`          | Shell dans le pod                       |
+| `d`          | Describe                                |
+| `Ctrl+a`     | Aliases (raccourcis vers ressources)    |
+{{- end }}
+
+{{- if has "kustomize" .tools }}
+
+### Kustomize
+
+| Commande                          | Effet                            |
+|-----------------------------------|----------------------------------|
+| `kustomize build <dir>`           | Render les manifests overlayés   |
+| `kustomize edit set image x=y`    | Modifie une image dans kustomization.yaml |
+| `kubectl apply -k <dir>`          | Apply directement (kubectl intègre kustomize) |
+{{- end }}
+
+{{- if has "argocd" .tools }}
+
+### Argo CD
+
+| Commande                              | Effet                              |
+|---------------------------------------|------------------------------------|
+| `argocd login <server>`               | Login                              |
+| `argocd app list`                     | Liste des apps                     |
+| `argocd app sync <app>`               | Sync manuel d'une app              |
+| `argocd app diff <app>`               | Diff cluster vs git                |
+| `argocd app rollback <app> <rev>`     | Rollback à une révision            |
+{{- end }}
+
+{{- end }}
+
+{{- if or (has "terraform" .tools) (has "terragrunt" .tools) (has "ansible" .tools) }}
+
+## Infrastructure as Code
+
+{{- if has "terraform" .tools }}
+
+### Terraform
+
+| Commande                          | Effet                              |
+|-----------------------------------|------------------------------------|
+| `terraform init`                  | Init le backend + télécharge providers |
+| `terraform fmt -recursive`        | Format les fichiers `.tf`          |
+| `terraform validate`              | Vérifie la syntaxe                 |
+| `terraform plan -out=tf.plan`     | Plan vers un fichier               |
+| `terraform apply tf.plan`         | Apply le plan exact                |
+| `terraform state list`            | Liste les ressources gérées        |
+| `terraform import <addr> <id>`    | Import une ressource existante     |
+| `terraform destroy`               | Détruit tout (à manier avec soin)  |
+{{- end }}
+
+{{- if has "terragrunt" .tools }}
+
+### Terragrunt
+
+| Commande                          | Effet                              |
+|-----------------------------------|------------------------------------|
+| `terragrunt init`                 | Init avec backend auto-configuré   |
+| `terragrunt plan`                 | Comme terraform plan + DRY config  |
+| `terragrunt apply`                | Apply                              |
+| `terragrunt run-all plan`         | Plan sur tout le tree de modules   |
+| `terragrunt run-all apply`        | Apply en respectant les deps       |
+{{- end }}
+
+{{- if has "ansible" .tools }}
+
+### Ansible
+
+| Commande                                            | Effet                          |
+|-----------------------------------------------------|--------------------------------|
+| `ansible-playbook -i inventory.yml site.yml`        | Run un playbook                |
+| `ansible -i inv all -m ping`                        | Test connectivité              |
+| `ansible-vault encrypt secrets.yml`                 | Chiffre un fichier             |
+| `ansible-galaxy install -r requirements.yml`        | Install les rôles externes     |
+{{- end }}
+
+{{- end }}
+
+{{- if or (has "sops" .tools) (has "age" .tools) }}
+
+## Secrets — SOPS + age
+
+### Setup initial (à faire une fois)
+
+```sh
+dotfiles-keygen-age           # crée ~/.config/sops/age/keys.txt + chmod 600
+                              # affiche ta clé publique → à coller dans .sops.yaml
+```
+
+> **Backup obligatoire** de `~/.config/sops/age/keys.txt` (1Password / USB chiffré).
+> Sans la clé privée tu ne déchiffres plus jamais tes secrets.
+
+{{- if has "age" .tools }}
+
+### age
+
+| Commande                                                | Effet                            |
+|---------------------------------------------------------|----------------------------------|
+| `dotfiles-keygen-age`                                   | Génère la clé via le helper      |
+| `dotfiles-keygen-age --pub`                             | Re-affiche la clé publique       |
+| `age-keygen -y ~/.config/sops/age/keys.txt`             | Idem en direct                   |
+| `age -e -r <pubkey> -o file.age file`                   | Chiffre un fichier seul          |
+| `age -d -i ~/.config/sops/age/keys.txt file.age`        | Déchiffre                        |
+{{- end }}
+
+{{- if has "sops" .tools }}
+
+### SOPS
+
+| Commande                                | Effet                              |
+|-----------------------------------------|------------------------------------|
+| `sops secrets.enc.yaml`                 | Édite (chiffre/déchiffre transparent) |
+| `sops -e -i secrets.enc.yaml`           | Chiffre in-place                   |
+| `sops -d secrets.enc.yaml`              | Déchiffre vers stdout              |
+| `sops updatekeys secrets.enc.yaml`      | Re-chiffre après ajout d'un destinataire |
+
+Config dans `.sops.yaml` à la racine de chaque repo : règles `creation_rules`
+qui mappent un glob de fichiers vers une `age:` recipient list. Un exemple
+prêt à copier vit dans `~/.local/share/dotfiles/examples/sops.yaml`.
+
+```sh
+cp ~/.local/share/dotfiles/examples/sops.yaml .sops.yaml
+$EDITOR .sops.yaml   # remplacer age1XXX… par ta clé publique
+```
+
+`SOPS_AGE_KEY_FILE` est exporté par `~/.config/zsh/env.zsh` — pas besoin
+de le passer à chaque commande.
+{{- end }}
+
+{{- end }}
+
+{{- if or (has "aws" .tools) (has "az" .tools) (has "gcloud" .tools) }}
+
+## Cloud SDKs
+
+{{- if has "aws" .tools }}
+
+### AWS
+
+| Commande                                  | Effet                          |
+|-------------------------------------------|--------------------------------|
+| `aws configure sso`                       | Login via SSO (recommandé)     |
+| `aws sts get-caller-identity`             | Vérifie qui je suis            |
+| `aws s3 ls`                               | Liste les buckets              |
+| `aws --profile <p> ec2 describe-instances`| Avec un profil nommé           |
+{{- end }}
+
+{{- if has "az" .tools }}
+
+### Azure
+
+| Commande                                  | Effet                          |
+|-------------------------------------------|--------------------------------|
+| `az login`                                | Login interactif (browser)     |
+| `az account show`                         | Subscription active            |
+| `az account set --subscription <id>`      | Switch de subscription         |
+| `az group list -o table`                  | Liste les resource groups      |
+{{- end }}
+
+{{- if has "gcloud" .tools }}
+
+### Google Cloud
+
+| Commande                                  | Effet                          |
+|-------------------------------------------|--------------------------------|
+| `gcloud auth login`                       | Login                          |
+| `gcloud config set project <id>`          | Project actif                  |
+| `gcloud projects list`                    | Liste des projets              |
+| `gcloud auth application-default login`   | Pour les SDK (app-default)     |
+{{- end }}
+
+{{- end }}
+
 ## Fonctionnement du framework
 
 Ce dépôt est un setup **chezmoi** plug-and-play. Le TUI (`scripts/install.sh`) écrit

@@ -11,6 +11,9 @@
 *.lua       text eol=lf
 *.md        text eol=lf
 
+# Extension-less bash binaries deployed to ~/.local/bin: same rule.
+home/dot_local/bin/executable_*    text eol=lf
+
 # PowerShell stays native CRLF on Windows where it actually runs.
 *.ps1       text eol=crlf
 *.psm1      text eol=crlf
