@@ -141,9 +141,19 @@ if (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]:
 }
 
 # Ensure ExecutionPolicy allows running the script in this session.
-if ((Get-ExecutionPolicy -Scope CurrentUser) -notin 'RemoteSigned', 'Unrestricted', 'Bypass') {
-    Write-Step 'Setting CurrentUser ExecutionPolicy to RemoteSigned (no admin needed)'
-    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+# Wrapped in try/catch because a freshly-created Windows user profile
+# (CI scenario: btest created moments ago) sometimes can't autoload
+# Microsoft.PowerShell.Security on first invocation. In CI we're
+# already running under `-ExecutionPolicy Bypass` from the parent
+# Start-Process call, so degrading to a no-op is safe.
+try {
+    if ((Get-ExecutionPolicy -Scope CurrentUser) -notin 'RemoteSigned', 'Unrestricted', 'Bypass') {
+        Write-Step 'Setting CurrentUser ExecutionPolicy to RemoteSigned (no admin needed)'
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+    }
+}
+catch {
+    Write-Warn "skipping execution-policy adjustment: $($_.Exception.Message.Split([Environment]::NewLine)[0])"
 }
 
 # ── 1. Scoop ──────────────────────────────────────────────────────────────
