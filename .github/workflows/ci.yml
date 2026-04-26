@@ -97,9 +97,19 @@ jobs:
           )
           # Recent PSScriptAnalyzer versions reject arrays for -Path; loop one
           # invocation per file and collect.
+          # Excluded rules:
+          #   PSUseBOMForUnicodeEncodedFile — pure cosmetic, harmful next to
+          #                                   shebangs / non-PowerShell parsers.
+          #   PSAvoidUsingWriteHost         — these scripts are interactive
+          #                                   coloured TUIs; Write-Host IS the
+          #                                   right tool here. Per-function
+          #                                   SuppressMessageAttribute is used
+          #                                   sparingly only where signal still
+          #                                   matters (bootstrap-windows.ps1).
+          $excluded = @('PSUseBOMForUnicodeEncodedFile', 'PSAvoidUsingWriteHost')
           $results = @()
           foreach ($f in $files) {
-              $results += Invoke-ScriptAnalyzer -Path $f -Severity Error,Warning
+              $results += Invoke-ScriptAnalyzer -Path $f -Severity Error,Warning -ExcludeRule $excluded
           }
           if ($results) {
               $results | Format-Table -AutoSize

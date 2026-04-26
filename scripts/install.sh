@@ -26,16 +26,16 @@ err() {
 
 # ── 1. Sanity ─────────────────────────────────────────────────────────────
 case "$(uname -s 2>/dev/null || echo unknown)" in
-    Linux) ;;
-    MINGW* | MSYS* | CYGWIN*)
-        err "Detected Windows shell — run scripts/install.ps1 from PowerShell instead."
-        ;;
-    Darwin)
-        err "macOS is not (yet) supported. Open an issue if you need it."
-        ;;
-    *)
-        err "Unsupported OS: $(uname -s)"
-        ;;
+Linux) ;;
+MINGW* | MSYS* | CYGWIN*)
+    err "Detected Windows shell — run scripts/install.ps1 from PowerShell instead."
+    ;;
+Darwin)
+    err "macOS is not (yet) supported. Open an issue if you need it."
+    ;;
+*)
+    err "Unsupported OS: $(uname -s)"
+    ;;
 esac
 
 # ── 2. Resolve script dir (local checkout vs curl-pipe) ───────────────────

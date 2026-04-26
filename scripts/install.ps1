@@ -28,6 +28,14 @@ function Write-Err {
 
 function Test-Cmd { param([string]$Name) [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
+# Scoop's official one-liner is `irm get.scoop.sh | iex` — there is no
+# alternative bootstrap path. Wrap it so the rule suppression is scoped.
+function Invoke-RemoteInstaller {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'Upstream Scoop installer is designed for iex')]
+    param([string]$Uri)
+    Invoke-RestMethod -Uri $Uri | Invoke-Expression
+}
+
 # ── 1. Resolve script dir (local checkout vs irm-pipe) ───────────────────
 $ScriptDir = $null
 if ($PSScriptRoot) { $ScriptDir = $PSScriptRoot }
@@ -38,7 +46,7 @@ if (-not $ScriptDir -or -not (Test-Path (Join-Path $ScriptDir 'bootstrap-windows
             # Bootstrap git via Scoop (which we'll need anyway).
             if (-not (Test-Cmd scoop)) {
                 Write-Step 'installing scoop (needed to fetch git)'
-                Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
+                Invoke-RemoteInstaller 'https://get.scoop.sh'
                 $env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'User') + ';' +
                             [Environment]::GetEnvironmentVariable('PATH', 'Machine')
             }

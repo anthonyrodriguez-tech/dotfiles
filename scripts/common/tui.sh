@@ -160,8 +160,8 @@ tui::choose_many() {
 tui::_chezmoi_field() {
     local key="$1" def="${2:-}" val=""
     if has_cmd chezmoi && has_cmd jq; then
-        val="$(chezmoi data 2>/dev/null \
-            | jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null || true)"
+        val="$(chezmoi data 2>/dev/null |
+            jq -r --arg k "$key" '.[$k] // empty' 2>/dev/null || true)"
     fi
     if [ -n "$val" ]; then
         printf '%s\n' "$val"
@@ -196,7 +196,7 @@ tui::_keys_to_labels() {
     [ -z "$keys_csv" ] && return 0
     local labels=("$@") result=()
     local IFS=',' picked_keys
-    read -ra picked_keys <<< "$keys_csv"
+    read -ra picked_keys <<<"$keys_csv"
     unset IFS
     local label label_key k
     for label in "${labels[@]}"; do
@@ -263,8 +263,8 @@ tui::_write_chezmoi_toml() {
         printf '    proxy_http  = %s\n' "$(tui::_toml_quote "${PROXY_HTTP:-}")"
         printf '    proxy_https = %s\n' "$(tui::_toml_quote "${PROXY_HTTPS:-}")"
         tui::_toml_array editors "${EDITORS[@]:-}"
-        tui::_toml_array tools   "${TOOLS[@]:-}"
-    } > "$tmp"
+        tui::_toml_array tools "${TOOLS[@]:-}"
+    } >"$tmp"
 
     mv "$tmp" "$cfg_file"
     log::ok "wrote ${cfg_file}"
@@ -276,8 +276,8 @@ tui::run() {
     local skip_bootstrap=0
     while [ "$#" -gt 0 ]; do
         case "$1" in
-            --no-bootstrap) skip_bootstrap=1 ;;
-            *) log::warn "tui::run: unknown flag $1" ;;
+        --no-bootstrap) skip_bootstrap=1 ;;
+        *) log::warn "tui::run: unknown flag $1" ;;
         esac
         shift
     done
@@ -340,7 +340,7 @@ tui::run() {
     while IFS= read -r line; do
         [ -z "$line" ] && continue
         EDITORS+=("$(printf '%s' "$line" | tui::_label_to_key)")
-    done <<< "$raw_editors"
+    done <<<"$raw_editors"
 
     # ── Tools ────────────────────────────────────────────────────────────
     local prev_tool_labels
@@ -356,7 +356,7 @@ tui::run() {
     while IFS= read -r line; do
         [ -z "$line" ] && continue
         TOOLS+=("$(printf '%s' "$line" | tui::_label_to_key)")
-    done <<< "$raw_tools"
+    done <<<"$raw_tools"
 
     # ── Persist + chezmoi ────────────────────────────────────────────────
     tui::_write_chezmoi_toml

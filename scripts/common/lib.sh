@@ -70,21 +70,21 @@ chezmoi_bootstrap() {
 
 os::detect() {
     case "$(uname -s 2>/dev/null || echo unknown)" in
-        Linux)
-            if has_cmd pacman; then
-                echo arch
-            elif has_cmd apt-get; then
-                echo ubuntu
-            else
-                echo unknown
-            fi
-            ;;
-        MINGW* | MSYS* | CYGWIN*)
-            echo windows
-            ;;
-        *)
+    Linux)
+        if has_cmd pacman; then
+            echo arch
+        elif has_cmd apt-get; then
+            echo ubuntu
+        else
             echo unknown
-            ;;
+        fi
+        ;;
+    MINGW* | MSYS* | CYGWIN*)
+        echo windows
+        ;;
+    *)
+        echo unknown
+        ;;
     esac
 }
 
@@ -103,23 +103,23 @@ pkg::install_many() {
         SUDO="sudo"
     fi
     case "$os" in
-        arch)
-            ${SUDO} pacman -S --needed --noconfirm "$@"
-            ;;
-        ubuntu)
-            ${SUDO} apt-get install -y --no-install-recommends "$@"
-            ;;
-        windows)
-            require scoop "scoop must be in PATH (bootstrap-windows.ps1 sets it up)"
-            local p
-            for p in "$@"; do
-                scoop install "$p"
-            done
-            ;;
-        *)
-            log::err "pkg::install_many: unsupported OS '${os}'"
-            return 1
-            ;;
+    arch)
+        ${SUDO} pacman -S --needed --noconfirm "$@"
+        ;;
+    ubuntu)
+        ${SUDO} apt-get install -y --no-install-recommends "$@"
+        ;;
+    windows)
+        require scoop "scoop must be in PATH (bootstrap-windows.ps1 sets it up)"
+        local p
+        for p in "$@"; do
+            scoop install "$p"
+        done
+        ;;
+    *)
+        log::err "pkg::install_many: unsupported OS '${os}'"
+        return 1
+        ;;
     esac
 }
 
@@ -197,18 +197,18 @@ gum::ensure() {
     local os
     os="$(os::detect)"
     case "$os" in
-        arch)
-            pkg::install_many gum && return 0
-            ;;
-        ubuntu)
-            pkg::install_many gum 2>/dev/null && return 0
-            log::warn "apt has no 'gum' package — falling back to upstream binary"
-            gum::_install_from_upstream && return 0
-            ;;
-        windows)
-            scoop install charm-gum 2>/dev/null && return 0
-            scoop install gum 2>/dev/null && return 0
-            ;;
+    arch)
+        pkg::install_many gum && return 0
+        ;;
+    ubuntu)
+        pkg::install_many gum 2>/dev/null && return 0
+        log::warn "apt has no 'gum' package — falling back to upstream binary"
+        gum::_install_from_upstream && return 0
+        ;;
+    windows)
+        scoop install charm-gum 2>/dev/null && return 0
+        scoop install gum 2>/dev/null && return 0
+        ;;
     esac
     log::warn "gum unavailable — TUI will fall back to plain text prompts"
     return 1
@@ -218,12 +218,12 @@ gum::_install_from_upstream() {
     local arch_lc tag="v${_GUM_VERSION}" url tmpdir
     arch_lc="$(uname -m)"
     case "$arch_lc" in
-        x86_64) url="https://github.com/charmbracelet/gum/releases/download/${tag}/gum_${_GUM_VERSION}_Linux_x86_64.tar.gz" ;;
-        aarch64) url="https://github.com/charmbracelet/gum/releases/download/${tag}/gum_${_GUM_VERSION}_Linux_arm64.tar.gz" ;;
-        *)
-            log::err "no upstream gum binary for arch ${arch_lc}"
-            return 1
-            ;;
+    x86_64) url="https://github.com/charmbracelet/gum/releases/download/${tag}/gum_${_GUM_VERSION}_Linux_x86_64.tar.gz" ;;
+    aarch64) url="https://github.com/charmbracelet/gum/releases/download/${tag}/gum_${_GUM_VERSION}_Linux_arm64.tar.gz" ;;
+    *)
+        log::err "no upstream gum binary for arch ${arch_lc}"
+        return 1
+        ;;
     esac
     tmpdir="$(mktemp -d)"
     if ! curl -fsSL "$url" -o "${tmpdir}/gum.tgz"; then

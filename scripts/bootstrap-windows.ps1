@@ -189,6 +189,7 @@ foreach ($p in $scoopPackages) {
 # can't clear the lock. The font is "functionally installed" if the .ttf
 # files exist on disk regardless of what scoop's exit code says.
 function Install-NerdFont {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'FilePattern', Justification = 'Used inside the $alreadyDeployed scriptblock — analyzer cannot trace dynamic invocations')]
     param([string]$ScoopName, [string]$FilePattern)
     $userFonts = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
     $alreadyDeployed = {

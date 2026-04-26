@@ -24,17 +24,25 @@ set -euo pipefail
 
 # ── Colour helpers (mirror scripts/common/lib.sh) ─────────────────────────
 if [ -t 1 ]; then
-    _C_RESET=$'\033[0m'; _C_BOLD=$'\033[1m'
-    _C_BLUE=$'\033[34m'; _C_GREEN=$'\033[32m'
-    _C_YELLOW=$'\033[33m'; _C_RED=$'\033[31m'
+    _C_RESET=$'\033[0m'
+    _C_BOLD=$'\033[1m'
+    _C_BLUE=$'\033[34m'
+    _C_GREEN=$'\033[32m'
+    _C_YELLOW=$'\033[33m'
+    _C_RED=$'\033[31m'
 else
-    _C_RESET=""; _C_BOLD=""; _C_BLUE=""; _C_GREEN=""; _C_YELLOW=""; _C_RED=""
+    _C_RESET=""
+    _C_BOLD=""
+    _C_BLUE=""
+    _C_GREEN=""
+    _C_YELLOW=""
+    _C_RED=""
 fi
 step() { printf '%s==> %s%s\n' "${_C_BOLD}${_C_BLUE}" "$*" "${_C_RESET}"; }
-ok()   { printf '%s  ✓ %s%s\n' "${_C_GREEN}" "$*" "${_C_RESET}"; }
+ok() { printf '%s  ✓ %s%s\n' "${_C_GREEN}" "$*" "${_C_RESET}"; }
 warn() { printf '%s  ! %s%s\n' "${_C_YELLOW}" "$*" "${_C_RESET}" >&2; }
 skip() { printf '%s  - %s (skipped — %s)%s\n' "${_C_YELLOW}" "$1" "$2" "${_C_RESET}"; }
-err()  { printf '%s  ✗ %s%s\n' "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
+err() { printf '%s  ✗ %s%s\n' "${_C_RED}${_C_BOLD}" "$*" "${_C_RESET}" >&2; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # ── Args ──────────────────────────────────────────────────────────────────
@@ -42,16 +50,16 @@ QUICK=0
 NO_PKG=0
 for arg in "$@"; do
     case "$arg" in
-        --quick) QUICK=1 ;;
-        --no-pkg) NO_PKG=1 ;;
-        -h | --help)
-            sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
-            exit 0
-            ;;
-        *)
-            err "unknown flag: $arg (try --help)"
-            exit 2
-            ;;
+    --quick) QUICK=1 ;;
+    --no-pkg) NO_PKG=1 ;;
+    -h | --help)
+        sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+    *)
+        err "unknown flag: $arg (try --help)"
+        exit 2
+        ;;
     esac
 done
 
@@ -63,18 +71,20 @@ fi
 # ── Detect package manager ────────────────────────────────────────────────
 PM=""
 case "$(uname -s)" in
-    Linux)
-        if have pacman; then PM="pacman"
-        elif have apt-get; then PM="apt"
-        fi
-        ;;
-    MINGW* | MSYS* | CYGWIN*)
-        # On MSYS2 we update Scoop, not pacman (MSYS2 pacman is for the
-        # MSYS2 layer only and managed via the bootstrap, not daily ops).
-        if have scoop || [ -x "${USERPROFILE:-${HOME}}/scoop/shims/scoop.cmd" ]; then
-            PM="scoop"
-        fi
-        ;;
+Linux)
+    if have pacman; then
+        PM="pacman"
+    elif have apt-get; then
+        PM="apt"
+    fi
+    ;;
+MINGW* | MSYS* | CYGWIN*)
+    # On MSYS2 we update Scoop, not pacman (MSYS2 pacman is for the
+    # MSYS2 layer only and managed via the bootstrap, not daily ops).
+    if have scoop || [ -x "${USERPROFILE:-${HOME}}/scoop/shims/scoop.cmd" ]; then
+        PM="scoop"
+    fi
+    ;;
 esac
 
 # ── 1. System packages ────────────────────────────────────────────────────
@@ -82,23 +92,23 @@ if [ "$QUICK" -eq 1 ] || [ "$NO_PKG" -eq 1 ]; then
     skip "system packages" "--quick or --no-pkg"
 else
     case "$PM" in
-        pacman)
-            step "pacman -Syu"
-            ${SUDO} pacman -Syu --noconfirm
-            ;;
-        apt)
-            step "apt update && upgrade"
-            ${SUDO} apt-get update
-            ${SUDO} apt-get upgrade -y
-            ;;
-        scoop)
-            step "scoop update *"
-            scoop update
-            scoop update '*' || warn "some scoop apps failed to update"
-            ;;
-        *)
-            warn "no supported package manager detected — skipping system upgrade"
-            ;;
+    pacman)
+        step "pacman -Syu"
+        ${SUDO} pacman -Syu --noconfirm
+        ;;
+    apt)
+        step "apt update && upgrade"
+        ${SUDO} apt-get update
+        ${SUDO} apt-get upgrade -y
+        ;;
+    scoop)
+        step "scoop update *"
+        scoop update
+        scoop update '*' || warn "some scoop apps failed to update"
+        ;;
+    *)
+        warn "no supported package manager detected — skipping system upgrade"
+        ;;
     esac
 fi
 

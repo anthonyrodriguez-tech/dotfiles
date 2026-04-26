@@ -40,15 +40,15 @@ fi
 ASSUME_YES=0
 for arg in "$@"; do
     case "$arg" in
-        -y | --yes) ASSUME_YES=1 ;;
-        -h | --help)
-            sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
-            exit 0
-            ;;
-        *)
-            log::err "unknown flag: $arg (try --help)"
-            exit 2
-            ;;
+    -y | --yes) ASSUME_YES=1 ;;
+    -h | --help)
+        sed -n '2,/^# ──*$/p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0
+        ;;
+    *)
+        log::err "unknown flag: $arg (try --help)"
+        exit 2
+        ;;
     esac
 done
 
@@ -58,11 +58,11 @@ if [ "${ASSUME_YES}" -ne 1 ]; then
     printf "Continue? (y/N) "
     read -r reply
     case "$reply" in
-        y | Y | yes | YES) ;;
-        *)
-            log::ok "aborted"
-            exit 0
-            ;;
+    y | Y | yes | YES) ;;
+    *)
+        log::ok "aborted"
+        exit 0
+        ;;
     esac
 fi
 
