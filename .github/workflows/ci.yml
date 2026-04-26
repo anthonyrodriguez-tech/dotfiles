@@ -194,7 +194,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install chezmoi
-        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+        run: |
+          # get.chezmoi.io occasionally returns 502 from its release CDN.
+          # Retry 3× with backoff before falling back to apt (noble has
+          # chezmoi in universe — older but functional for CI rendering).
+          install_upstream() {
+            sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          }
+          for attempt in 1 2 3; do
+            if install_upstream; then
+              echo "chezmoi installed via upstream (attempt $attempt)"
+              exit 0
+            fi
+            echo "::warning::upstream installer attempt $attempt failed — sleeping $((attempt * 5))s"
+            sleep $((attempt * 5))
+          done
+          echo "::warning::upstream installer kept failing — falling back to apt"
+          sudo apt-get install -y chezmoi
+          mkdir -p "$HOME/.local/bin"
+          ln -sf "$(command -v chezmoi)" "$HOME/.local/bin/chezmoi"
 
       - name: chezmoi init
         run: |
@@ -261,7 +279,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install chezmoi
-        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+        run: |
+          # get.chezmoi.io occasionally returns 502 from its release CDN.
+          # Retry 3× with backoff before falling back to apt (noble has
+          # chezmoi in universe — older but functional for CI rendering).
+          install_upstream() {
+            sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          }
+          for attempt in 1 2 3; do
+            if install_upstream; then
+              echo "chezmoi installed via upstream (attempt $attempt)"
+              exit 0
+            fi
+            echo "::warning::upstream installer attempt $attempt failed — sleeping $((attempt * 5))s"
+            sleep $((attempt * 5))
+          done
+          echo "::warning::upstream installer kept failing — falling back to apt"
+          sudo apt-get install -y chezmoi
+          mkdir -p "$HOME/.local/bin"
+          ln -sf "$(command -v chezmoi)" "$HOME/.local/bin/chezmoi"
 
       - name: Pre-write chezmoi.toml (skips the .chezmoi.toml.tmpl prompts)
         run: |
