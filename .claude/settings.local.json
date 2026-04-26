@@ -12,7 +12,13 @@
       "Bash(chmod +x C:/Users/Tony/dotfiles/scripts/uninstall-arch.sh C:/Users/Tony/dotfiles/scripts/uninstall-ubuntu.sh)",
       "Bash(chmod +x C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-update C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-doctor)",
       "Bash(git check-ignore *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/scripts/common/tui.sh)",
+      "Bash(bash -c ' *)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/scripts/common/lib.sh)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/scripts/install.sh)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-config)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-keygen-age)"
     ]
   }
 }
