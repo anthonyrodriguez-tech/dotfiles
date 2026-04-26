@@ -14,7 +14,7 @@
   ─────────────────────────────────────────────────────────────────────────
 */ -}}
 #!/usr/bin/env bash
-# data-hash: {{ list .editors .tools .chezmoi.os | toJson | sha256sum }}
+# data-hash: {{ list .editors .tools .chezmoi.os .mise_plugins | toJson | sha256sum }}
 
 set -euo pipefail
 
@@ -29,14 +29,24 @@ fi
 log::step "install packages for {{ .chezmoi.os }} (editors={{ .editors | toJson }}, tools={{ .tools | toJson }})"
 
 PACKAGES=()
+MISE_PLUGINS=()
 {{- $os := .chezmoi.os -}}
 {{- range $tool := concat .editors .tools }}
-  {{- /* Look up packages.<tool>.<os>; skip if missing or empty.            */ -}}
-  {{- $entry := index $.packages $tool -}}
-  {{- if $entry -}}
-    {{- $pkg := index $entry $os -}}
-    {{- if $pkg }}
-PACKAGES+=("{{ $pkg }}")  # {{ $tool }}
+  {{- /* 1. Try packages.<tool>.<os>. If non-empty → use the OS package
+         manager. If the entry exists but is empty (""), or if the entry
+         is missing entirely, fall through to mise.                       */ -}}
+  {{- $entry  := index $.packages $tool -}}
+  {{- $pkg    := "" -}}
+  {{- if $entry }}{{ $pkg = index $entry $os }}{{ end -}}
+  {{- if $pkg }}
+PACKAGES+=("{{ $pkg }}")  # {{ $tool }} via PM
+  {{- else -}}
+    {{- /* 2. mise plugin fallback.                                         */ -}}
+    {{- $mise := index $.mise_plugins $tool -}}
+    {{- if $mise }}
+MISE_PLUGINS+=("{{ $mise }}")  # {{ $tool }}
+    {{- else if eq $tool "node" }}
+MISE_PLUGINS+=("node@lts")  # node (special-cased)
     {{- end -}}
   {{- end -}}
 {{- end }}
@@ -48,16 +58,22 @@ else
     log::ok "no PM packages to install for current selection on {{ .chezmoi.os }}"
 fi
 
-# ── Special-cased tools (no PM package, custom install path) ──────────────
-
-{{- if has "node" .tools }}
-log::step "node@lts via mise"
-if has_cmd mise; then
-    mise use --global node@lts >/dev/null
-    log::ok "node ($(mise current node 2>/dev/null || echo '?')) ready"
-else
-    log::warn "mise not installed — skipping node setup"
+# ── mise plugins (CLIs that vanilla PM doesn't ship reliably) ─────────────
+if [ "${#MISE_PLUGINS[@]}" -gt 0 ]; then
+    if has_cmd mise; then
+        log::step "mise use --global (${#MISE_PLUGINS[@]} tools)"
+        if [ "${DOTFILES_DRY_RUN:-0}" = "1" ]; then
+            log::ok "DRY_RUN: would mise install: ${MISE_PLUGINS[*]}"
+        else
+            for plugin in "${MISE_PLUGINS[@]}"; do
+                mise use --global "$plugin" >/dev/null \
+                    && log::ok "mise: $plugin" \
+                    || log::warn "mise: failed to install $plugin"
+            done
+        fi
+    else
+        log::warn "mise not installed — skipping ${#MISE_PLUGINS[@]} tool(s): ${MISE_PLUGINS[*]}"
+    fi
 fi
-{{- end }}
 
 log::ok "package install pass done"

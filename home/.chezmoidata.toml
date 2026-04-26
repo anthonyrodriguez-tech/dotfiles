@@ -25,9 +25,27 @@ code = "Visual Studio Code"
 zed  = "Zed"
 
 [tools_available]
-docker = "Docker Engine + CLI"
-dotnet = ".NET SDK"
-node   = "Node.js (via mise)"
+# Runtimes & desktop tooling
+docker     = "Docker Engine + CLI"
+dotnet     = ".NET SDK"
+node       = "Node.js (via mise)"
+# Kubernetes & GitOps
+kubectl    = "kubectl — Kubernetes CLI"
+helm       = "Helm — K8s package manager"
+k9s        = "k9s — terminal UI for K8s"
+kustomize  = "Kustomize — K8s manifest overlays"
+argocd     = "Argo CD CLI"
+# Infrastructure as Code
+terraform  = "Terraform"
+terragrunt = "Terragrunt"
+ansible    = "Ansible"
+# Secrets & encryption
+sops       = "SOPS — encrypted config files"
+age        = "age — modern file encryption"
+# Cloud SDKs
+aws        = "AWS CLI v2"
+az         = "Azure CLI"
+gcloud     = "Google Cloud SDK"
 
 # ── Tool → OS package matrix ─────────────────────────────────────────────
 # Key absent for an OS  ⇒  unsupported there. Value can be empty string to
@@ -60,6 +78,93 @@ windows = "dotnet-sdk"
 arch    = ""
 ubuntu  = ""
 windows = ""
+
+# ── Kubernetes & GitOps ──────────────────────────────────────────────────
+[packages.kubectl]
+arch    = "kubectl"
+ubuntu  = ""        # apt has no kubectl; mise plugin handles it
+windows = "kubectl"
+
+[packages.helm]
+arch    = "helm"
+ubuntu  = ""        # mise plugin
+windows = "helm"
+
+[packages.k9s]
+arch    = "k9s"
+ubuntu  = ""        # mise plugin
+windows = "k9s"
+
+[packages.kustomize]
+arch    = "kustomize"
+ubuntu  = ""        # mise plugin
+windows = "kustomize"
+
+[packages.argocd]
+arch    = "argocd"
+ubuntu  = ""        # mise plugin (argocd-cli)
+windows = "argocd"
+
+# ── Infrastructure as Code ───────────────────────────────────────────────
+[packages.terraform]
+arch    = "terraform"
+ubuntu  = ""        # mise plugin
+windows = "terraform"
+
+[packages.terragrunt]
+arch    = ""        # AUR only — mise plugin recommended
+ubuntu  = ""
+windows = "terragrunt"
+
+[packages.ansible]
+arch    = "ansible"
+ubuntu  = "ansible"
+windows = ""        # ansible control node on Windows is unusual
+
+# ── Secrets & encryption ─────────────────────────────────────────────────
+[packages.sops]
+arch    = "sops"
+ubuntu  = "sops"    # ubuntu 24.04+, falls back to mise on older
+windows = "sops"
+
+[packages.age]
+arch    = "age"
+ubuntu  = "age"
+windows = "age"
+
+# ── Cloud SDKs ───────────────────────────────────────────────────────────
+[packages.aws]
+arch    = ""        # AUR (aws-cli-v2) — use mise instead
+ubuntu  = ""        # mise plugin (awscli)
+windows = "aws"
+
+[packages.az]
+arch    = ""        # AUR — use mise (azure-cli)
+ubuntu  = ""        # MS-repo install — mise plugin instead
+windows = "azure-cli"
+
+[packages.gcloud]
+arch    = ""        # AUR (google-cloud-sdk) — mise plugin (gcloud-sdk)
+ubuntu  = ""
+windows = "gcloud"
+
+# ── mise fallback for tools without a vanilla PM package ─────────────────
+# When packages.<tool>.<os> is empty, the install hook checks this map and
+# runs `mise use --global <plugin>@latest` instead. Tools NOT in this map
+# fall through with a warning: "no install path on this OS".
+[mise_plugins]
+kubectl    = "kubectl@latest"
+helm       = "helm@latest"
+k9s        = "k9s@latest"
+kustomize  = "kustomize@latest"
+argocd     = "argocd@latest"
+terraform  = "terraform@latest"
+terragrunt = "terragrunt@latest"
+sops       = "sops@latest"
+age        = "age@latest"
+aws        = "awscli@latest"
+az         = "azure-cli@latest"
+gcloud     = "gcloud@latest"
 
 # ── VSCode extensions installed by run_onchange_20 ───────────────────────
 # Rendered into `code --install-extension <id> --force` calls. The list is

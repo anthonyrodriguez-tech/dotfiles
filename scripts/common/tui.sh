@@ -29,22 +29,81 @@ if [ -z "${_DOTFILES_LIB_LOADED:-}" ]; then
 fi
 
 # ── Catalogues ────────────────────────────────────────────────────────────
-# Source of truth for the *labels* shown to the user. The matching package
-# names per OS live in home/.chezmoidata.toml [packages.*]. If you add a
-# new entry here, mirror it there or the install hook will skip it.
-readonly _TUI_EDITORS_KEYS=(nvim code zed)
-readonly _TUI_EDITORS_LABELS=(
-    "nvim — Neovim (LazyVim)"
-    "code — Visual Studio Code"
-    "zed  — Zed"
-)
-readonly _TUI_TOOLS_KEYS=(docker dotnet node)
-readonly _TUI_TOOLS_LABELS=(
-    "docker — Docker Engine + CLI"
-    "dotnet — .NET SDK"
-    "node   — Node.js (via mise)"
-)
+# Source of truth = home/.chezmoidata.toml [editors_available] / [tools_available].
+# We parse it dynamically so adding a tool there shows up in the TUI without
+# touching this file. The TOML parser below only handles flat
+# `key = "value"` pairs inside the targeted [section] — no nesting, which is
+# all .chezmoidata.toml uses for these two sections.
 readonly _TUI_PROFILES=(arch ubuntu safran)
+
+# tui::_load_section <section-name> → echoes one "key|label" pair per line,
+# in source order. Empty if the file or section is missing.
+tui::_load_section() {
+    local section="$1"
+    local file
+    if [ -n "${_TUI_DIR:-}" ] && [ -f "${_TUI_DIR}/../../home/.chezmoidata.toml" ]; then
+        file="${_TUI_DIR}/../../home/.chezmoidata.toml"
+    elif [ -f "${HOME}/.local/share/chezmoi/home/.chezmoidata.toml" ]; then
+        file="${HOME}/.local/share/chezmoi/home/.chezmoidata.toml"
+    else
+        return 0
+    fi
+    awk -v sec="[$section]" '
+        $0 == sec        { in_section = 1; next }
+        /^\[/            { in_section = 0 }
+        in_section && /^[a-zA-Z_][a-zA-Z0-9_-]*[[:space:]]*=/ {
+            split($0, kv, "=")
+            key = kv[1]
+            sub(/[[:space:]]+$/, "", key)
+            val = $0
+            sub(/^[^=]*=[[:space:]]*/, "", val)
+            sub(/^"/, "", val); sub(/"[[:space:]]*(#.*)?$/, "", val)
+            printf "%s|%s\n", key, val
+        }
+    ' "$file"
+}
+
+_TUI_EDITORS_KEYS=()
+_TUI_EDITORS_LABELS=()
+_TUI_TOOLS_KEYS=()
+_TUI_TOOLS_LABELS=()
+
+tui::_init_catalogues() {
+    local line key label
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        key="${line%%|*}"
+        label="${line#*|}"
+        _TUI_EDITORS_KEYS+=("$key")
+        _TUI_EDITORS_LABELS+=("${key} — ${label}")
+    done < <(tui::_load_section editors_available)
+
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        key="${line%%|*}"
+        label="${line#*|}"
+        _TUI_TOOLS_KEYS+=("$key")
+        _TUI_TOOLS_LABELS+=("${key} — ${label}")
+    done < <(tui::_load_section tools_available)
+
+    # Hardcoded fallback if the data file is missing (curl-pipe before clone).
+    if [ "${#_TUI_EDITORS_KEYS[@]}" -eq 0 ]; then
+        _TUI_EDITORS_KEYS=(nvim code zed)
+        _TUI_EDITORS_LABELS=(
+            "nvim — Neovim (LazyVim)"
+            "code — Visual Studio Code"
+            "zed — Zed"
+        )
+    fi
+    if [ "${#_TUI_TOOLS_KEYS[@]}" -eq 0 ]; then
+        _TUI_TOOLS_KEYS=(docker dotnet node)
+        _TUI_TOOLS_LABELS=(
+            "docker — Docker Engine + CLI"
+            "dotnet — .NET SDK"
+            "node — Node.js (via mise)"
+        )
+    fi
+}
 
 # ── Gum wrappers (auto-fallback to POSIX prompts) ────────────────────────
 
@@ -224,6 +283,7 @@ tui::run() {
     done
 
     log::step "dotfiles bootstrap — interactive setup"
+    tui::_init_catalogues
     tui::_init_gum
 
     # Pre-fill from any prior run.
