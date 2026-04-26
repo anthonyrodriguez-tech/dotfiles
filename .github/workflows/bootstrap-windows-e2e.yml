@@ -59,10 +59,19 @@ jobs:
           # write to %USERPROFILE% on first run. Without this the first
           # Start-Process -Credential creates the profile lazily and
           # races against the script's early file writes.
+          #
+          # We also explicitly import Microsoft.PowerShell.Security and
+          # invoke Get-ExecutionPolicy here. A fresh user profile has no
+          # ModuleAnalysisCache built yet, and lazy-loading of system
+          # PS modules later in the bootstrap fails with
+          # "command was found in the module ... but the module could
+          # not be loaded". Exercising the module during warm-up
+          # populates the cache so the bootstrap call doesn't trip on it.
           $cred = New-Object PSCredential('btest', $pw)
+          $warmup = 'Import-Module Microsoft.PowerShell.Security -Force; Get-ExecutionPolicy | Out-Null; exit 0'
           $p = Start-Process powershell -PassThru -Wait `
             -Credential $cred -LoadUserProfile `
-            -ArgumentList '-NoProfile','-Command','exit'
+            -ArgumentList '-Command', $warmup
           if ($p.ExitCode -ne 0) { throw "profile init exited $($p.ExitCode)" }
 
       - name: Run bootstrap as btest

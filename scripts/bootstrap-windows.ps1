@@ -22,6 +22,23 @@
 # them). Configure via $env:DOTFILES_REPO before running instead.
 $ErrorActionPreference = 'Stop'
 
+# Force-load Microsoft.PowerShell.Security up front. A freshly-created user
+# profile (CI scenario, or a brand-new Windows account on a corporate
+# laptop) sometimes has no ModuleAnalysisCache yet, and the autoloader
+# fails silently on first use of Get-ExecutionPolicy / Set-ExecutionPolicy
+# / Invoke-Expression with a confusing "command was found in the module
+# but the module could not be loaded" message. Importing explicitly here
+# either succeeds (subsequent calls work) or fails loudly with a real
+# diagnostic. Wrapped in try/catch so a degraded environment doesn't
+# block bootstrap entirely — we degrade to "just continue, hope for the
+# best" with a visible warning.
+try {
+    Import-Module Microsoft.PowerShell.Security -Force -ErrorAction Stop
+}
+catch {
+    Write-Host "  ! could not preload Microsoft.PowerShell.Security: $($_.Exception.Message.Split([Environment]::NewLine)[0])" -ForegroundColor Yellow
+}
+
 $RepoUrl = if ($env:DOTFILES_REPO) { $env:DOTFILES_REPO } else { 'https://github.com/anthonyrodriguez-tech/dotfiles.git' }
 
 # Write-Host is intentional: this script runs interactively in a terminal
