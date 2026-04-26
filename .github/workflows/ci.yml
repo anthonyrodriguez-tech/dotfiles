@@ -95,7 +95,12 @@ jobs:
               'home/dot_local/bin/dotfiles-doctor.ps1',
               'home/dot_local/bin/dotfiles-config.ps1'
           )
-          $results = Invoke-ScriptAnalyzer -Path $files -Severity Error,Warning
+          # Recent PSScriptAnalyzer versions reject arrays for -Path; loop one
+          # invocation per file and collect.
+          $results = @()
+          foreach ($f in $files) {
+              $results += Invoke-ScriptAnalyzer -Path $f -Severity Error,Warning
+          }
           if ($results) {
               $results | Format-Table -AutoSize
               throw "PSScriptAnalyzer reported $($results.Count) issue(s)."

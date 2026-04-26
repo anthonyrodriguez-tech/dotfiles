@@ -18,6 +18,23 @@
 editors = []
 tools   = []
 
+# ── VSCode extensions installed by run_onchange_20 ───────────────────────
+# Top-level array — MUST stay before any [section] block (TOML table
+# headers swallow every subsequent key into themselves; if this list
+# moves below `[mise_plugins]` it silently becomes
+# `mise_plugins.vscode_extensions` and the template can't find it).
+# The list is ignored entirely if "code" is not in `.editors`.
+vscode_extensions = [
+    "ms-vscode.PowerShell",
+    "ms-azuretools.vscode-docker",
+    "ms-dotnettools.csdevkit",
+    "hashicorp.terraform",
+    "redhat.vscode-yaml",
+    "esbenp.prettier-vscode",
+    "eamodio.gitlens",
+    "vscodevim.vim",
+]
+
 # ── Catalogue presented by the TUI ───────────────────────────────────────
 [editors_available]
 nvim = "Neovim (LazyVim)"
@@ -165,17 +182,3 @@ age        = "age@latest"
 aws        = "awscli@latest"
 az         = "azure-cli@latest"
 gcloud     = "gcloud@latest"
-
-# ── VSCode extensions installed by run_onchange_20 ───────────────────────
-# Rendered into `code --install-extension <id> --force` calls. The list is
-# ignored entirely if "code" is not in `.editors`.
-vscode_extensions = [
-    "ms-vscode.PowerShell",
-    "ms-azuretools.vscode-docker",
-    "ms-dotnettools.csdevkit",
-    "hashicorp.terraform",
-    "redhat.vscode-yaml",
-    "esbenp.prettier-vscode",
-    "eamodio.gitlens",
-    "vscodevim.vim",
-]

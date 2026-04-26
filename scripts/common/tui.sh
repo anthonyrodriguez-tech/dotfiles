@@ -254,7 +254,7 @@ tui::_write_chezmoi_toml() {
     local tmp
     tmp="$(mktemp "${cfg_dir}/chezmoi.toml.XXXXXX")"
     {
-        printf '# Written by scripts/common/tui.sh — edit via `chezmoi edit-config`\n'
+        printf "# Written by scripts/common/tui.sh — edit via 'chezmoi edit-config'\n"
         printf '# or re-run scripts/install.sh for the interactive flow.\n\n'
         printf '[data]\n'
         printf '    name        = %s\n' "$(tui::_toml_quote "$NAME")"
