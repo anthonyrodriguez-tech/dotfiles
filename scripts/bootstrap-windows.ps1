@@ -22,16 +22,27 @@
 # them). Configure via $env:DOTFILES_REPO before running instead.
 $ErrorActionPreference = 'Stop'
 
-# Force-load Microsoft.PowerShell.Security up front. A freshly-created user
-# profile (CI scenario, or a brand-new Windows account on a corporate
-# laptop) sometimes has no ModuleAnalysisCache yet, and the autoloader
-# fails silently on first use of Get-ExecutionPolicy / Set-ExecutionPolicy
-# / Invoke-Expression with a confusing "command was found in the module
-# but the module could not be loaded" message. Importing explicitly here
-# either succeeds (subsequent calls work) or fails loudly with a real
-# diagnostic. Wrapped in try/catch so a degraded environment doesn't
-# block bootstrap entirely — we degrade to "just continue, hope for the
-# best" with a visible warning.
+# ─── PowerShell 5.1 vs 7 module-path collision ─────────────────────────────
+# On hosts where both Windows PowerShell 5.1 and PowerShell 7 are installed
+# (GitHub windows-latest runners; many corporate Windows images including
+# Safran), a freshly-provisioned user's $PSModulePath contains BOTH
+# %ProgramFiles%\PowerShell\7\Modules and the 5.1 system Modules dir.
+# When 5.1 autoloads Microsoft.PowerShell.Security it also processes
+# PS 7's Types.ps1xml, which redefines `AuditToString` on
+# System.Security.AccessControl.ObjectSecurity → duplicate-member fatal,
+# the module fails to load, and every Get-ExecutionPolicy /
+# Invoke-Expression call afterwards trips on the same wreckage.
+#
+# Strip PS 7 paths from $PSModulePath up front so 5.1 stays in its own lane.
+# Harmless on hosts without PS 7 (the filter is a no-op there).
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object {
+        $_ -and $_ -notmatch '\\PowerShell\\7\b' -and $_ -notmatch '\\Modules-PWSH'
+    }) -join ';'
+}
+
+# Now force-load Microsoft.PowerShell.Security explicitly so a stale
+# ModuleAnalysisCache (brand-new user profile) cannot trip the autoloader.
 try {
     Import-Module Microsoft.PowerShell.Security -Force -ErrorAction Stop
 }
