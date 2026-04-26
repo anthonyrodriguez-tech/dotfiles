@@ -72,14 +72,15 @@ jobs:
           # collision (Types.ps1xml AuditToString duplicate). Strip PS 7
           # paths first, THEN exercise Microsoft.PowerShell.Security so
           # the ModuleAnalysisCache builds against the 5.1-only module set.
-          $warmup = @'
-          $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object {
-              $_ -and $_ -notmatch '\\PowerShell\\7\b' -and $_ -notmatch '\\Modules-PWSH'
-          }) -join ';'
-          Import-Module Microsoft.PowerShell.Security -Force
-          Get-ExecutionPolicy | Out-Null
-          exit 0
-'@
+          # Concat-style string (a here-string would need `'@` at column 0,
+          # which YAML's block-scalar indentation refuses).
+          $warmup = (
+            "`$env:PSModulePath = (`$env:PSModulePath -split ';' | " +
+            "Where-Object { `$_ -and `$_ -notmatch '\\PowerShell\\7\b' -and " +
+            "`$_ -notmatch '\\Modules-PWSH' }) -join ';'; " +
+            "Import-Module Microsoft.PowerShell.Security -Force; " +
+            "Get-ExecutionPolicy | Out-Null; exit 0"
+          )
           $p = Start-Process powershell -PassThru -Wait `
             -Credential $cred -LoadUserProfile `
             -ArgumentList '-Command', $warmup
