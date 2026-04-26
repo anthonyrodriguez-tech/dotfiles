@@ -18,7 +18,10 @@
       "Bash(bash -n C:/Users/Tony/dotfiles/scripts/common/lib.sh)",
       "Bash(bash -n C:/Users/Tony/dotfiles/scripts/install.sh)",
       "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-config)",
-      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-keygen-age)"
+      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-keygen-age)",
+      "Bash(bash -n scripts/common/tui.sh)",
+      "Bash(command -v shellcheck)",
+      "Bash(shellcheck -x scripts/common/tui.sh)"
     ]
   }
 }
