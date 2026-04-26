@@ -29,13 +29,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
           shellcheck -x \
+            scripts/install.sh \
             scripts/bootstrap-arch.sh \
             scripts/bootstrap-ubuntu.sh \
             scripts/uninstall-arch.sh \
             scripts/uninstall-ubuntu.sh \
             scripts/common/lib.sh \
+            scripts/common/tui.sh \
             home/dot_local/bin/executable_dotfiles-update \
-            home/dot_local/bin/executable_dotfiles-doctor
+            home/dot_local/bin/executable_dotfiles-doctor \
+            home/dot_local/bin/executable_dotfiles-config \
+            home/dot_local/bin/executable_dotfiles-keygen-age
 
       - name: shfmt (diff)
         uses: mfinelli/setup-shfmt@v3
@@ -43,13 +47,17 @@ jobs:
       - name: shfmt check
         run: |
           shfmt -d -i 4 \
+            scripts/install.sh \
             scripts/bootstrap-arch.sh \
             scripts/bootstrap-ubuntu.sh \
             scripts/uninstall-arch.sh \
             scripts/uninstall-ubuntu.sh \
             scripts/common/lib.sh \
+            scripts/common/tui.sh \
             home/dot_local/bin/executable_dotfiles-update \
-            home/dot_local/bin/executable_dotfiles-doctor
+            home/dot_local/bin/executable_dotfiles-doctor \
+            home/dot_local/bin/executable_dotfiles-config \
+            home/dot_local/bin/executable_dotfiles-keygen-age
 
   # ── PowerShell ────────────────────────────────────────────────────────
   powershell:
@@ -80,10 +88,12 @@ jobs:
         run: |
           Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
           $files = @(
+              'scripts/install.ps1',
               'scripts/bootstrap-windows.ps1',
               'scripts/uninstall-windows.ps1',
               'home/dot_local/bin/dotfiles-update.ps1',
-              'home/dot_local/bin/dotfiles-doctor.ps1'
+              'home/dot_local/bin/dotfiles-doctor.ps1',
+              'home/dot_local/bin/dotfiles-config.ps1'
           )
           $results = Invoke-ScriptAnalyzer -Path $files -Severity Error,Warning
           if ($results) {
@@ -205,3 +215,107 @@ jobs:
             "$HOME/.gitconfig" > /tmp/gitconfig
           git config --file /tmp/gitconfig --list > /dev/null
           echo ".gitconfig OK for ${{ matrix.profile }}"
+
+  # ── Real chezmoi apply with idempotence check ─────────────────────────
+  # The dry-run job above only renders templates. This one actually runs
+  # `chezmoi apply` so the run_onchange_* hooks fire, then re-runs apply
+  # and asserts the second pass is a no-op (data-hash headers + idempotent
+  # file writes). Package installs are stubbed via DOTFILES_DRY_RUN=1.
+  apply-idempotence:
+    name: chezmoi apply x2 (${{ matrix.profile }} · editors=${{ matrix.editors_label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: arch
+            editors: '["nvim"]'
+            editors_label: nvim
+            tools: '[]'
+          - profile: arch
+            editors: '["nvim","code","zed"]'
+            editors_label: full
+            tools: '["docker","node"]'
+          - profile: ubuntu
+            editors: '["code"]'
+            editors_label: code
+            tools: '["dotnet"]'
+          - profile: safran
+            editors: '[]'
+            editors_label: none
+            tools: '[]'
+          - profile: safran
+            editors: '["nvim","code"]'
+            editors_label: nvim-code
+            tools: '["docker"]'
+          - profile: arch
+            editors: '["nvim"]'
+            editors_label: devops
+            tools: '["kubectl","helm","terraform","sops","age"]'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install chezmoi
+        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+
+      - name: Pre-write chezmoi.toml (skips the .chezmoi.toml.tmpl prompts)
+        run: |
+          mkdir -p "$HOME/.config/chezmoi" "$HOME/Desktop" "$HOME/work"
+          cat > "$HOME/.config/chezmoi/chezmoi.toml" <<'EOF'
+          [data]
+              name        = "CI Bot"
+              email       = "ci@ci.test"
+              profile     = "${{ matrix.profile }}"
+              proxy_http  = ""
+              proxy_https = ""
+              editors     = ${{ matrix.editors }}
+              tools       = ${{ matrix.tools }}
+          EOF
+          echo '── chezmoi.toml ──'
+          cat "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: First apply (hooks fire, packages stubbed)
+        env:
+          DOTFILES_DRY_RUN: "1"
+        run: |
+          "$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --verbose 2>&1 | tee /tmp/apply1.log
+
+      - name: Idempotence — chezmoi diff must be empty after first apply
+        run: |
+          out="$("$HOME/.local/bin/chezmoi" diff --source="$PWD/home")"
+          if [ -n "$out" ]; then
+            echo "::error::chezmoi diff non-empty after first apply:"
+            echo "$out"
+            exit 1
+          fi
+          echo "OK: chezmoi diff empty"
+
+      - name: Second apply must be a no-op
+        env:
+          DOTFILES_DRY_RUN: "1"
+        run: |
+          "$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --verbose 2>&1 | tee /tmp/apply2.log
+          # Any line announcing a write or a script execution on the second
+          # pass is an idempotence regression. chezmoi prints "create" / "update"
+          # / "modify" / "run" verbs in --verbose mode for actions actually
+          # taken; a clean re-apply produces zero such lines.
+          if grep -E '^(create |update |modify |run )' /tmp/apply2.log; then
+            echo "::error::second apply was not idempotent — see lines above"
+            exit 1
+          fi
+          echo "OK: second apply silent"
+
+      - name: Inspect chezmoi state for run_onchange_ hashes
+        run: |
+          "$HOME/.local/bin/chezmoi" state get-bucket --bucket=scriptState \
+            || echo "(no scriptState bucket — no run_onchange_ scripts ran for this matrix)"
+
+      - name: Upload apply logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apply-logs-${{ matrix.profile }}-${{ matrix.editors_label }}
+          path: |
+            /tmp/apply1.log
+            /tmp/apply2.log
+          if-no-files-found: ignore
