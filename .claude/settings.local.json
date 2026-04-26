@@ -21,7 +21,8 @@
       "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-keygen-age)",
       "Bash(bash -n scripts/common/tui.sh)",
       "Bash(command -v shellcheck)",
-      "Bash(shellcheck -x scripts/common/tui.sh)"
+      "Bash(shellcheck -x scripts/common/tui.sh)",
+      "Bash(bash -n scripts/install.sh scripts/uninstall-arch.sh scripts/uninstall-ubuntu.sh scripts/common/lib.sh scripts/common/tui.sh home/dot_local/bin/executable_dotfiles-update home/dot_local/bin/executable_dotfiles-doctor home/dot_local/bin/executable_dotfiles-keygen-age)"
     ]
   }
 }
