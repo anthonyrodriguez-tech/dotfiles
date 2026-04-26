@@ -1,0 +1,63 @@
+{{- /*
+  ─────────────────────────────────────────────────────────────────────────
+  WHAT  : install the packages the user ticked in the TUI for the current
+          OS. Driven by `.editors` + `.tools` (chosen via gum) and the
+          `[packages.*]` matrix in home/.chezmoidata.toml.
+  WHERE : home/.chezmoiscripts/run_onchange_10-install-packages.sh.tmpl
+  WHY   : `run_onchange_` re-runs whenever the rendered script changes.
+          Since the body interpolates the user's selections, any edit to
+          `.editors` / `.tools` (via `chezmoi edit-config` or a re-run of
+          tui.sh) yields a new script and triggers a fresh install pass.
+          Idempotent: every PM call uses --needed / -y / scoop's "already
+          installed" early-exit, and `pkg::installed_p` short-circuits
+          when the binary is already on PATH.
+  ─────────────────────────────────────────────────────────────────────────
+*/ -}}
+#!/usr/bin/env bash
+# data-hash: {{ list .editors .tools .chezmoi.os | toJson | sha256sum }}
+
+set -euo pipefail
+
+LIB="{{ joinPath .chezmoi.workingTree "scripts" "common" "lib.sh" }}"
+if [ ! -f "$LIB" ]; then
+    echo "fatal: cannot find $LIB — repo layout broken?" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+. "$LIB"
+
+log::step "install packages for {{ .chezmoi.os }} (editors={{ .editors | toJson }}, tools={{ .tools | toJson }})"
+
+PACKAGES=()
+{{- $os := .chezmoi.os -}}
+{{- range $tool := concat .editors .tools }}
+  {{- /* Look up packages.<tool>.<os>; skip if missing or empty.            */ -}}
+  {{- $entry := index $.packages $tool -}}
+  {{- if $entry -}}
+    {{- $pkg := index $entry $os -}}
+    {{- if $pkg }}
+PACKAGES+=("{{ $pkg }}")  # {{ $tool }}
+    {{- end -}}
+  {{- end -}}
+{{- end }}
+
+if [ "${#PACKAGES[@]}" -gt 0 ]; then
+    log::step "pkg::install_many ${PACKAGES[*]}"
+    pkg::install_many "${PACKAGES[@]}"
+else
+    log::ok "no PM packages to install for current selection on {{ .chezmoi.os }}"
+fi
+
+# ── Special-cased tools (no PM package, custom install path) ──────────────
+
+{{- if has "node" .tools }}
+log::step "node@lts via mise"
+if has_cmd mise; then
+    mise use --global node@lts >/dev/null
+    log::ok "node ($(mise current node 2>/dev/null || echo '?')) ready"
+else
+    log::warn "mise not installed — skipping node setup"
+fi
+{{- end }}
+
+log::ok "package install pass done"

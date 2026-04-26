@@ -2,14 +2,18 @@
   ─────────────────────────────────────────────────────────────────────────
   WHAT  : files inside the chezmoi source tree that should NOT be applied
           to the target ($HOME).
-  WHERE : home/.chezmoiignore  (one of chezmoi's special source files)
+  WHERE : home/.chezmoiignore  (chezmoi reads it as a template — the
+          `{{` directives below get evaluated at apply time).
   WHY   :
-    * .gitkeep stubs only exist so empty leaf dirs survive in git; they
-      must never land in $HOME.
-    * The defensive entries (README.md, LICENSE, ...) cover the case where
-      someone drops one of those files inside home/ by mistake — chezmoi's
-      source dir is `home/`, so anything at the *repo* root is naturally
-      out of scope already.
+    * .gitkeep stubs only exist so empty leaf dirs survive in git.
+    * Defensive entries (README.md…) catch stray files dropped inside
+      home/ by mistake.
+    * OS-specific paths: VSCode lives at ~/.config/Code on Linux/macOS but
+      %APPDATA%\Code on Windows. We ship BOTH templates and ignore the
+      irrelevant one based on .chezmoi.os.
+    * Editor opt-in: if the user did not tick "code" / "zed" / "nvim" in
+      the TUI (`.editors`), the corresponding config tree never lands in
+      $HOME — keeping the system clean of stuff the user did not ask for.
   ─────────────────────────────────────────────────────────────────────────
 */ -}}
 
@@ -25,3 +29,23 @@ LICENSE.*
 PLAN.md
 docs
 scripts
+
+# ── OS gating ────────────────────────────────────────────────────────────
+{{- if eq .chezmoi.os "windows" }}
+.config/Code
+.config/zed
+{{- else }}
+AppData
+{{- end }}
+
+# ── Editor opt-in gating ─────────────────────────────────────────────────
+{{- if not (has "code" .editors) }}
+.config/Code
+AppData/Roaming/Code
+{{- end }}
+{{- if not (has "zed" .editors) }}
+.config/zed
+{{- end }}
+{{- if not (has "nvim" .editors) }}
+.config/nvim
+{{- end }}

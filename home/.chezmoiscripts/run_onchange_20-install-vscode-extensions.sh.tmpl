@@ -1,0 +1,41 @@
+{{- /*
+  ─────────────────────────────────────────────────────────────────────────
+  WHAT  : install the VSCode extensions listed in
+          home/.chezmoidata.toml `vscode_extensions`.
+  WHERE : home/.chezmoiscripts/run_onchange_20-install-vscode-extensions.sh.tmpl
+  WHY   : runs after install-packages (10) so the `code` CLI is in PATH.
+          `code --install-extension --force` is idempotent.
+          Skipped entirely when the user did not pick "code" in the TUI.
+  ─────────────────────────────────────────────────────────────────────────
+*/ -}}
+#!/usr/bin/env bash
+# data-hash: {{ list .editors .vscode_extensions | toJson | sha256sum }}
+
+set -euo pipefail
+
+LIB="{{ joinPath .chezmoi.workingTree "scripts" "common" "lib.sh" }}"
+# shellcheck source=/dev/null
+. "$LIB"
+
+{{- if not (has "code" .editors) }}
+log::ok "VSCode not selected — skipping extension install"
+exit 0
+{{- end }}
+
+if ! has_cmd code; then
+    log::warn "code CLI not in PATH — skipping extensions (run install-packages first)"
+    exit 0
+fi
+
+EXTS=(
+{{- range .vscode_extensions }}
+    {{ . | quote }}
+{{- end }}
+)
+
+log::step "VSCode extensions (${#EXTS[@]} entries)"
+for ext in "${EXTS[@]}"; do
+    code --install-extension "$ext" --force >/dev/null 2>&1 \
+        && log::ok "$ext" \
+        || log::warn "failed to install $ext"
+done

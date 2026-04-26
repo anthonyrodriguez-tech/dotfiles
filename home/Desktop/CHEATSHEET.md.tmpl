@@ -1,0 +1,139 @@
+{{- /*
+  Cheatsheet rendered conditionally based on the user's TUI selections.
+  Lives at ~/Desktop/CHEATSHEET.md — chezmoi creates ~/Desktop if needed.
+  Edit by re-running scripts/install.sh (gum re-asks) and `chezmoi apply`.
+*/ -}}
+# Dotfiles cheatsheet — {{ .name }}
+
+> Profile **{{ .profile }}**  ·  OS **{{ .chezmoi.os }}**
+> Re-render: `dotfiles-update`  ·  Re-prompt: `dotfiles-config`
+
+## Commandes système
+
+| Commande            | Effet                                                 |
+|---------------------|-------------------------------------------------------|
+| `dotfiles-update`   | `chezmoi update` — pull du dépôt + apply              |
+| `dotfiles-doctor`   | `chezmoi doctor` — diagnostic de l'environnement      |
+| `dotfiles-config`   | Re-lance le TUI gum pour modifier les choix           |
+| `lg`                | Lazygit                                               |
+| `chezmoi edit-config` | Édite manuellement `~/.config/chezmoi/chezmoi.toml` |
+
+## Override utilisateur (User Space)
+
+Aucun fichier tracké par ce dépôt ne doit être édité à la main. À la place :
+
+- **Zsh** : poser tes alias / fonctions perso dans `~/.config/zsh/local.zsh` — sourcé en fin de `.zshrc`.
+- **Git** : config personnelle dans `~/.gitconfig.local` — chargé via `[include]`.
+- **Profil de travail** : repos sous `~/work/` héritent automatiquement de la config Git via `[includeIf "gitdir:~/work/"]`.
+
+{{- if has "nvim" .editors }}
+
+## Neovim (LazyVim)
+
+| Touche       | Action                              |
+|--------------|-------------------------------------|
+| `<Space>`    | Préfixe leader (toutes les actions) |
+| `<Space>e`   | Explorer (neo-tree)                 |
+| `<Space>ff`  | Find files (telescope)              |
+| `<Space>fg`  | Live grep                           |
+| `<Space>fb`  | Buffers ouverts                     |
+| `<Space>gg`  | Lazygit                             |
+| `<Space>l`   | Lazy plugin manager                 |
+| `<Space>cm`  | Mason (LSP installer)               |
+| `<Space>qq`  | Quitter Neovim                      |
+| `<Space>w`   | Sauver le buffer                    |
+| `gd` / `gr`  | Go to definition / references       |
+| `K`          | Hover doc (LSP)                     |
+| `<C-h/j/k/l>`| Naviguer entre splits               |
+{{- end }}
+
+{{- if has "code" .editors }}
+
+## VSCode
+
+| Raccourci             | Action                            |
+|-----------------------|-----------------------------------|
+| `Ctrl+P`              | Quick Open (fichiers)             |
+| `Ctrl+Shift+P`        | Command Palette                   |
+| `Ctrl+Shift+F`        | Search in workspace               |
+| `Ctrl+\``             | Toggle terminal intégré           |
+| `Ctrl+B`              | Toggle sidebar                    |
+| `Ctrl+J`              | Toggle panel (terminal/output)    |
+| `F12`                 | Go to definition                  |
+| `Shift+F12`           | Find all references               |
+| `F2`                  | Rename symbol                     |
+| `Alt+Shift+F`         | Format document                   |
+
+CLI : `code .` (ouvrir le dossier courant) · `code --install-extension <id>` (extensions).
+
+{{- end }}
+
+{{- if has "zed" .editors }}
+
+## Zed
+
+| Raccourci                   | Action                       |
+|-----------------------------|------------------------------|
+| `Ctrl+P` / `Cmd+P`          | File finder                  |
+| `Ctrl+Shift+P` / `Cmd+Shift+P` | Command palette           |
+| `Ctrl+Shift+F`              | Search in project            |
+| `Ctrl+\``                   | Toggle terminal              |
+| `Ctrl+B`                    | Toggle left dock             |
+| Vim mode actif — `:`, `gd`, `K`, etc. comme dans Neovim. |
+
+{{- end }}
+
+{{- if has "docker" .tools }}
+
+## Docker
+
+| Commande                    | Effet                          |
+|-----------------------------|--------------------------------|
+| `docker ps`                 | Conteneurs actifs              |
+| `docker compose up -d`      | Démarre la stack du dossier    |
+| `docker compose logs -f`    | Suit les logs                  |
+| `docker system prune -a`    | Nettoie images / volumes orphelins |
+
+{{- end }}
+
+{{- if has "dotnet" .tools }}
+
+## .NET
+
+| Commande                | Effet                             |
+|-------------------------|-----------------------------------|
+| `dotnet new <template>` | Crée un projet (console/web/lib…) |
+| `dotnet build`          | Compile                           |
+| `dotnet test`           | Run la suite de tests             |
+| `dotnet watch run`      | Hot reload                        |
+
+{{- end }}
+
+{{- if has "node" .tools }}
+
+## Node.js (mise)
+
+| Commande                       | Effet                            |
+|--------------------------------|----------------------------------|
+| `mise current`                 | Versions actives sur le shell   |
+| `mise use --global node@lts`   | Pin la version par défaut        |
+| `mise install node@20`         | Installe une version spécifique  |
+| `npm i -g <pkg>`               | Install global (sandbox mise)    |
+
+{{- end }}
+
+## Fonctionnement du framework
+
+Ce dépôt est un setup **chezmoi** plug-and-play. Le TUI (`scripts/install.sh`) écrit
+tes choix dans `~/.config/chezmoi/chezmoi.toml`, puis `chezmoi apply` matérialise
+les configs et installe les paquets via la matrice `home/.chezmoidata.toml`.
+
+Pour ajouter un éditeur ou un outil après coup :
+
+```bash
+dotfiles-config         # gum re-prompt
+chezmoi apply --verbose # applique les changements
+```
+
+Les hooks `home/.chezmoiscripts/run_onchange_*.sh.tmpl` ré-installent ce qui doit l'être
+quand tes données changent (hash interne en début de script).

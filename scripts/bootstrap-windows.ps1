@@ -282,25 +282,35 @@ else {
     Invoke-RemoteInstaller 'https://raw.githubusercontent.com/can1357/oh-my-pi/main/scripts/install.ps1'
 }
 
-# ── 7. chezmoi init --apply ───────────────────────────────────────────────
+# ── 7. Interactive TUI (MSYS2 bash → tui.sh) → chezmoi apply ─────────────
+# The TUI logic lives in scripts/common/tui.sh (single source of truth
+# across Linux + Windows). On Windows we run it through MSYS2 bash that
+# was just installed in step 4. The TUI writes ~/.config/chezmoi/chezmoi.toml
+# and then calls chezmoi_bootstrap (which does init --apply or apply).
+#
 # DOTFILES_BOOTSTRAP_SKIP_CHEZMOI=1 stops here. Two callers want this:
-#   - CI: chezmoi init prompts for email/name/profile and the bootstrap
-#     doesn't pre-answer them; templates are validated by a separate job.
-#   - Users who only want the Scoop+MSYS2 binaries on a corporate machine
-#     and intend to set up chezmoi by hand.
+#   - CI: prompts can't run unattended; templates are validated by a
+#     separate job.
+#   - Users who only want the Scoop+MSYS2 binaries on a corporate
+#     machine and intend to set up chezmoi by hand.
 if ($env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI) {
     Write-Step 'chezmoi (skipped — DOTFILES_BOOTSTRAP_SKIP_CHEZMOI is set)'
 }
 else {
-    Write-Step "chezmoi init --apply $RepoUrl"
-    $chezmoiStateDir = Join-Path $env:USERPROFILE '.local\share\chezmoi'
-    $chezmoiCfgDir   = Join-Path $env:USERPROFILE '.config\chezmoi'
-    if ((Test-Path $chezmoiStateDir) -or (Test-Path $chezmoiCfgDir)) {
-        chezmoi apply --verbose
+    Write-Step 'Interactive setup (MSYS2 bash → tui.sh)'
+    $sourceDir = Join-Path $env:USERPROFILE '.local\share\chezmoi'
+    if (-not (Test-Path (Join-Path $sourceDir '.git'))) {
+        Write-Step "cloning $RepoUrl → $sourceDir"
+        New-Item -ItemType Directory -Force -Path (Split-Path $sourceDir) | Out-Null
+        git clone --depth=1 $RepoUrl $sourceDir
     }
     else {
-        chezmoi init --apply $RepoUrl
+        Write-Ok "chezmoi source dir already cloned ($sourceDir)"
     }
+    # MSYS2 sees $HOME as %USERPROFILE% (we set nsswitch db_home: windows).
+    # tui.sh ends with a chezmoi_bootstrap call which runs apply.
+    Invoke-Msys2 ('set -e; . "$HOME/.local/share/chezmoi/scripts/common/tui.sh"; ' +
+        'DOTFILES_REPO="' + $RepoUrl + '" tui::run')
 }
 
 # ── 8. Post-install ───────────────────────────────────────────────────────

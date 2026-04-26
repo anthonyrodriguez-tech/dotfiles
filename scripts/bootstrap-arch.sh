@@ -78,8 +78,17 @@ else
     log::ok "omp already installed"
 fi
 
-# ── chezmoi apply ─────────────────────────────────────────────────────────
-chezmoi_bootstrap "${REPO_URL}"
+# ── Interactive TUI (gum) → writes ~/.config/chezmoi/chezmoi.toml ─────────
+# tui::run also calls chezmoi_bootstrap once the user has confirmed.
+log::step "interactive setup"
+if [ -n "${SCRIPT_DIR:-}" ] && [ -f "${SCRIPT_DIR}/common/tui.sh" ]; then
+    # shellcheck source=scripts/common/tui.sh
+    . "${SCRIPT_DIR}/common/tui.sh"
+else
+    log::err "tui.sh not found — run scripts/install.sh from a local clone."
+    exit 1
+fi
+DOTFILES_REPO="${REPO_URL}" tui::run
 
 log::step "done"
 log::ok "open a new terminal — zsh + starship should greet you"

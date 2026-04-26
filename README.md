@@ -34,36 +34,37 @@ See [`docs/plan-history.md`](./docs/plan-history.md) for the full implementation
 
 ## Install
 
-> Each bootstrap script is idempotent — re-running it does nothing if everything is already in place.
+> Plug & Play : un seul point d'entrée par OS. Le script détecte la distro,
+> clone le dépôt, lance un TUI [gum](https://github.com/charmbracelet/gum)
+> qui te demande tes choix (éditeurs, outils, profil), puis applique. Tout
+> est **idempotent** — re-jouer le script ne casse rien.
 
-### Arch Linux
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootstrap-arch.sh | bash
-```
-
-### Ubuntu / Debian
+### Linux (Arch · Ubuntu · Debian)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootstrap-ubuntu.sh | bash
+curl -fsSL https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/install.sh | bash
 ```
 
 ### Windows (PowerShell, no admin required)
 
 ```powershell
-irm https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/bootstrap-windows.ps1 | iex
+irm https://raw.githubusercontent.com/<USER>/dotfiles/main/scripts/install.ps1 | iex
 ```
 
-Each bootstrap script is **idempotent** (re-run safely) and needs no admin
-rights — Linux uses the native package manager (pacman or apt), Windows
-uses Scoop + MSYS2 under `%USERPROFILE%`.
+Le TUI te pose 5 questions (nom, email, profil, éditeurs, outils
+additionnels), écrit `~/.config/chezmoi/chezmoi.toml`, puis lance
+`chezmoi init --apply`. Sur Windows tout reste en user-level (Scoop +
+MSYS2 sous `%USERPROFILE%`, aucun admin requis).
 
-If you prefer to skip the bootstrap and just wire up dotfiles into an
-already-prepared system:
+Pour sauter le TUI et te brancher sur un système déjà préparé :
 
 ```sh
 chezmoi init --apply https://github.com/<USER>/dotfiles.git
 ```
+
+> Les scripts `bootstrap-{arch,ubuntu}.sh` et `bootstrap-windows.ps1`
+> existent toujours et restent appelables directement (utilisé en CI ou
+> quand tu veux contrôler l'OS détecté).
 
 ### Post-install — AI CLIs
 
@@ -80,7 +81,7 @@ live outside chezmoi's tracked state.
 
 ## Maintenance
 
-The dotfiles ship two binaries on `$PATH` for day-to-day upkeep:
+The dotfiles ship three binaries on `$PATH` for day-to-day upkeep:
 
 ```sh
 dotfiles-update            # full pass: pkg upgrade + chezmoi + LazyVim + Mason + AI CLIs
@@ -89,6 +90,9 @@ dotfiles-update --no-pkg   # skip system package upgrade (useful behind a flaky 
 
 dotfiles-doctor            # health check: binaries on PATH, nvim startup, chezmoi diagnostics
 dotfiles-doctor --quiet    # only show problems (good for CI)
+
+dotfiles-config            # re-run the gum TUI (change editors / tools / profile)
+dotfiles-config --no-apply # only rewrite chezmoi.toml, do not run chezmoi apply
 ```
 
 On Windows, `dotfiles-update.ps1` and `dotfiles-doctor.ps1` are also deployed
@@ -142,7 +146,7 @@ dotfiles/
 
 ## Per-machine profiles
 
-`chezmoi init` prompts for a `profile`, which conditions templated files:
+Le TUI te demande un `profile`, qui conditionne les templates :
 
 | Profile | Use case |
 |---|---|
@@ -150,9 +154,28 @@ dotfiles/
 | `ubuntu` | personal Ubuntu / Debian machine |
 | `safran` | Safran corporate Windows laptop (MSYS2, proxy, restricted permissions) |
 
-Local non-tracked overrides:
-- `~/.config/zsh/local.zsh` — sourced last by zsh
-- `~/.gitconfig.local` — included by `~/.gitconfig`
+## User Space — overrides locaux
+
+> **Tu ne dois jamais éditer un fichier tracké par ce dépôt pour
+> personnaliser ton environnement.** Les hooks ci-dessous existent pour ça.
+
+| Concerne | Fichier (jamais tracké) | Comment c'est chargé |
+|---|---|---|
+| Aliases / fonctions zsh perso | `~/.config/zsh/local.zsh` | Sourced en fin de `.zshrc` |
+| Variables d'env zsh perso | `~/.zshrc.local` | Sourced en fin de `.zshrc` |
+| Identité / signing key Git perso | `~/.gitconfig.local` | `[include]` à la fin de `~/.gitconfig` |
+| Identité Git pour `~/work/*` | `~/.gitconfig.work` | `[includeIf "gitdir:~/work/"]` |
+
+Pour ajouter ou retirer un éditeur / outil après le premier install :
+
+```sh
+dotfiles-config         # re-prompt via gum
+chezmoi apply --verbose # applique le diff (déjà fait par dotfiles-config par défaut)
+```
+
+Le hash placé en tête de `home/.chezmoiscripts/run_onchange_*.sh.tmpl`
+fait que chezmoi rejoue automatiquement les installs quand tes choix
+changent.
 
 ## Documentation
 

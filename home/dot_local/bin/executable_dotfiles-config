@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : re-launches the interactive TUI so the user can change their
+#         editors / tools / profile selections after the initial install.
+# WHERE : home/dot_local/bin/executable_dotfiles-config
+#         → ~/.local/bin/dotfiles-config  (deployed by chezmoi)
+# WHY   : `chezmoi edit-config` opens chezmoi.toml in $EDITOR — which
+#         requires the user to know the data schema. This wrapper is the
+#         friendly equivalent: re-prompts via gum and writes the same file.
+#         After it runs, `chezmoi apply` propagates the changes.
+#
+# Usage:
+#   dotfiles-config           # re-prompt + chezmoi apply
+#   dotfiles-config --no-apply  # only re-write chezmoi.toml
+# ─────────────────────────────────────────────────────────────────────────
+
+set -euo pipefail
+
+SOURCE_DIR="${HOME}/.local/share/chezmoi"
+TUI="${SOURCE_DIR}/scripts/common/tui.sh"
+
+if [ ! -f "$TUI" ]; then
+    printf '\033[1;31m  ✗ tui.sh not found at %s\033[0m\n' "$TUI" >&2
+    printf '    Did you run scripts/install.sh? Source dir missing.\n' >&2
+    exit 1
+fi
+
+# shellcheck source=/dev/null
+. "$TUI"
+
+if [ "${1:-}" = "--no-apply" ]; then
+    tui::run --no-bootstrap
+else
+    tui::run
+fi

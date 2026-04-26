@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────────────────────────────────
+# WHAT  : repo-side defaults that every chezmoi template can read.
+# WHERE : home/.chezmoidata.toml  (chezmoi loads automatically, source-side)
+# WHY   :
+#   * `editors_available` / `tools_available` drive the gum TUI: the user
+#     ticks among these labels.
+#   * `packages.<tool>.<os>` is THE matrix the install hook looks up.
+#     Missing OS key = tool unsupported on that OS (TUI hides the option).
+#   * Per-machine choices (.editors, .tools, .name, .email, .profile)
+#     come from ~/.config/chezmoi/chezmoi.toml written by `tui.sh`. Those
+#     values OVERRIDE anything declared here.
+# ─────────────────────────────────────────────────────────────────────────
+
+# ── Defaults for per-machine arrays ──────────────────────────────────────
+# tui.sh writes the user's actual selections into chezmoi.toml on bootstrap.
+# These defaults exist so templates can render before tui.sh ever ran (e.g.
+# `chezmoi diff` on a freshly-cloned source dir without a chezmoi.toml).
+editors = []
+tools   = []
+
+# ── Catalogue presented by the TUI ───────────────────────────────────────
+[editors_available]
+nvim = "Neovim (LazyVim)"
+code = "Visual Studio Code"
+zed  = "Zed"
+
+[tools_available]
+docker = "Docker Engine + CLI"
+dotnet = ".NET SDK"
+node   = "Node.js (via mise)"
+
+# ── Tool → OS package matrix ─────────────────────────────────────────────
+# Key absent for an OS  ⇒  unsupported there. Value can be empty string to
+# mean "skip via a special-case path" (e.g. installer script handled in
+# the run_onchange hook).
+[packages.code]
+arch    = "code"
+ubuntu  = "code"
+windows = "vscode"
+
+[packages.zed]
+arch    = "zed"
+ubuntu  = "zed"
+# (no windows — Zed has no stable Windows build yet)
+
+[packages.docker]
+arch    = "docker"
+ubuntu  = "docker.io"
+windows = "docker-desktop"
+
+[packages.dotnet]
+arch    = "dotnet-sdk"
+ubuntu  = "dotnet-sdk-8.0"
+windows = "dotnet-sdk"
+
+[packages.node]
+# All three OSes go through mise (already installed by bootstrap), the
+# install hook calls `mise use --global node@lts` instead of a PM. Empty
+# strings are placeholders so the TUI lists the option for every OS.
+arch    = ""
+ubuntu  = ""
+windows = ""
+
+# ── VSCode extensions installed by run_onchange_20 ───────────────────────
+# Rendered into `code --install-extension <id> --force` calls. The list is
+# ignored entirely if "code" is not in `.editors`.
+vscode_extensions = [
+    "ms-vscode.PowerShell",
+    "ms-azuretools.vscode-docker",
+    "ms-dotnettools.csdevkit",
+    "hashicorp.terraform",
+    "redhat.vscode-yaml",
+    "esbenp.prettier-vscode",
+    "eamodio.gitlens",
+    "vscodevim.vim",
+]

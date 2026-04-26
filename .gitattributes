@@ -1,0 +1,17 @@
+# Force LF on shell-family files so cloning on Windows (autocrlf=true) does
+# not silently convert them and break bash inside MSYS2 / Git-Bash.
+*.sh        text eol=lf
+*.zsh       text eol=lf
+*.bash      text eol=lf
+*.tmpl      text eol=lf
+*.toml      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.json      text eol=lf
+*.lua       text eol=lf
+*.md        text eol=lf
+
+# PowerShell stays native CRLF on Windows where it actually runs.
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
