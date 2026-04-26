@@ -93,11 +93,30 @@ jobs:
           $cred = New-Object PSCredential('btest', $pw)
           $log = Join-Path $env:RUNNER_TEMP 'bootstrap.log'
 
-          # Wrapper script: sets the skip-chezmoi env var inside btest's
-          # session and tees output to a log the parent can read.
-          # Start-Process -Credential's RedirectStandardOutput is flaky
+          # Wrapper script: re-pins btest's environment, sets the
+          # skip-chezmoi env var, and tees output to a log the parent
+          # can read.
+          #
+          # Start-Process -Credential inherits env vars from the spawner
+          # (runneradmin's pwsh). USERPROFILE / APPDATA / LOCALAPPDATA /
+          # TEMP all leak through, which makes Scoop try to install at
+          # C:\Users\runneradmin\scoop\ where btest has no write access.
+          # Override them explicitly to btest's profile dirs before any
+          # tool reads them. Same for $env:SCOOP — runneradmin has Scoop
+          # pre-installed on GitHub runners, the env var leaks too.
+          #
+          # RedirectStandardOutput on Start-Process -Credential is flaky
           # across user boundaries; an in-child Tee-Object is reliable.
           $wrap = "
+            `$env:USERPROFILE  = 'C:\Users\btest'
+            `$env:HOMEDRIVE    = 'C:'
+            `$env:HOMEPATH     = '\Users\btest'
+            `$env:APPDATA      = 'C:\Users\btest\AppData\Roaming'
+            `$env:LOCALAPPDATA = 'C:\Users\btest\AppData\Local'
+            `$env:TEMP         = 'C:\Users\btest\AppData\Local\Temp'
+            `$env:TMP          = `$env:TEMP
+            Remove-Item Env:SCOOP        -ErrorAction SilentlyContinue
+            Remove-Item Env:SCOOP_GLOBAL -ErrorAction SilentlyContinue
             `$env:DOTFILES_BOOTSTRAP_SKIP_CHEZMOI = '1'
             & '$env:GITHUB_WORKSPACE\scripts\bootstrap-windows.ps1' *>&1 |
               Tee-Object -FilePath '$log'
@@ -125,6 +144,9 @@ jobs:
           $log = Join-Path $env:RUNNER_TEMP 'verify.log'
 
           $check = "
+            `$env:USERPROFILE  = 'C:\Users\btest'
+            `$env:LOCALAPPDATA = 'C:\Users\btest\AppData\Local'
+            `$env:APPDATA      = 'C:\Users\btest\AppData\Roaming'
             `$env:PATH = [Environment]::GetEnvironmentVariable('PATH','User') + ';' +
                         [Environment]::GetEnvironmentVariable('PATH','Machine')
             `$bins = 'scoop','chezmoi','wezterm','starship','rg','fd','bat','eza','zoxide','gh','jq','mise','atuin','nvim','lazygit','delta','fzf'
