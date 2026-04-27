@@ -13,4 +13,7 @@ scripts
        est déjà installé par scripts/install.ps1 via scoop). */ -}}
 {{- if eq .chezmoi.os "windows" }}
 .chezmoiscripts/run_onchange_10-install-packages.sh.tmpl
+{{- else }}
+{{- /* Profils PowerShell uniquement utiles sur Windows. */ -}}
+Documents
 {{- end }}

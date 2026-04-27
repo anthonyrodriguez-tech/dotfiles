@@ -94,12 +94,21 @@ foreach ($b in @('main', 'extras', 'nerd-fonts')) {
 
 # ── 3. Stack KISS ────────────────────────────────────────────────────────
 $stack = @(
-    'git', 'chezmoi', 'wezterm', 'neovim', 'lazygit', 'starship',
+    'git', 'chezmoi', 'pwsh', 'wezterm', 'neovim', 'lazygit', 'starship',
     'zoxide', 'eza', 'fzf', 'ripgrep', 'fd', 'bat', 'delta', 'gh',
     'jq', 'yq', 'JetBrainsMono-NF'
 )
 Write-Step 'Scoop packages'
 foreach ($p in $stack) { scoop install $p }
+
+# PSReadLine (predictive history, syntax highlighting) + PSFzf (Ctrl-R/T).
+# Install only if missing; -SkipPublisherCheck handles signed-module quirks
+# on bare PS 5.1.
+foreach ($mod in @('PSReadLine', 'PSFzf')) {
+    if (-not (Get-Module -ListAvailable -Name $mod)) {
+        Install-Module -Name $mod -Force -Scope CurrentUser -SkipPublisherCheck
+    }
+}
 
 # ── 4. Claude Code (native installer) ────────────────────────────────────
 Write-Step 'Claude Code'

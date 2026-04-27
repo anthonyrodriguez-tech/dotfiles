@@ -23,7 +23,7 @@ ubuntu = [
 # WezTerm, lazygit, eza, starship, delta, gh n'ont pas de package apt fiable
 # sur les LTS récentes — installés via leur installeur officiel par le hook.
 windows = [
-    "git", "wezterm", "neovim", "lazygit", "starship",
+    "git", "pwsh", "wezterm", "neovim", "lazygit", "starship",
     "zoxide", "eza", "fzf", "ripgrep", "fd", "bat", "delta",
     "gh", "jq", "yq",
     "JetBrainsMono-NF",

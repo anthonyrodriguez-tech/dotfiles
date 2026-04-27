@@ -33,7 +33,8 @@ omp           # configurer les providers via /login
 
 | Outil                     | Arch (`pacman`) | Debian/Ubuntu (`apt`)  | Windows (`scoop`) |
 | ------------------------- | :-------------: | :--------------------: | :---------------: |
-| `zsh`                     | ✓               | ✓                      | —                 |
+| `zsh`                     | ✓               | ✓                      | — (pwsh à la place) |
+| `pwsh` (PowerShell 7)     | —               | —                      | ✓                 |
 | `git`                     | ✓               | ✓                      | ✓                 |
 | `neovim`                  | ✓               | ✓                      | ✓                 |
 | `chezmoi`                 | ✓               | via curl               | ✓                 |
@@ -86,14 +87,21 @@ omp             # première fois : /login pour configurer les providers
 L'alias `cc` (zsh) pointe sur `claude`. `omp` lit nativement
 `~/.claude/commands/`, `~/.claude/agents/` et `~/.claude/CLAUDE.md`.
 
-### 3. Shell par défaut (Linux)
+### 3. Shell par défaut
 
-Le bootstrap tente `chsh -s $(which zsh)`. Si ça échoue :
+**Linux.** Le bootstrap tente `chsh -s $(which zsh)`. Si ça échoue :
 
 ```sh
 grep zsh /etc/shells || echo "$(which zsh)" | sudo tee -a /etc/shells
 chsh -s "$(which zsh)"
 ```
+
+**Windows.** WezTerm lance directement `pwsh` (cherché dans
+`~\scoop\apps\pwsh\current\` puis `Program Files\PowerShell\7\`). Le profil
+PowerShell est déployé par chezmoi à `Documents\PowerShell\` (PS 7) et
+`Documents\WindowsPowerShell\` (PS 5.1, qui dot-source le précédent —
+un seul fichier à maintenir). Modules requis (`PSReadLine`, `PSFzf`)
+installés par `install.ps1` au scope CurrentUser.
 
 ---
 

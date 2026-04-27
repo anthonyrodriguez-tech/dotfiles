@@ -32,8 +32,8 @@ If `$HTTP_PROXY` is already exported, the proxy questions are skipped.
 | Layer            | Tool                                              |
 | ---------------- | ------------------------------------------------- |
 | Dotfile manager  | chezmoi                                           |
-| Shell            | zsh (Linux), PowerShell (Windows native)          |
-| Prompt           | starship                                          |
+| Shell            | zsh (Linux), pwsh / PowerShell 7 (Windows native) |
+| Prompt           | starship (cross-shell — same prompt everywhere)   |
 | Terminal         | WezTerm                                           |
 | Editor           | Neovim + LazyVim                                  |
 | Git UI           | lazygit                                           |
@@ -43,6 +43,13 @@ If `$HTTP_PROXY` is already exported, the proxy questions are skipped.
 | Fuzzy finder     | fzf                                               |
 | AI in terminal   | Claude Code, oh-my-pi (`omp`)                     |
 | Package manager  | pacman / apt / Scoop                              |
+
+### Shell parity
+
+The pwsh profile (`Documents/PowerShell/Microsoft.PowerShell_profile.ps1`)
+mirrors `~/.config/zsh/.zshrc`: same starship prompt, same zoxide-replaced
+`cd`, same `ls`/`ll`/`lg` aliases, predictive history (PSReadLine ≈
+zsh-autosuggestions). Open WezTerm on Linux or Windows: same UX.
 
 The full list lives in `home/.chezmoidata.toml`.
 
@@ -70,11 +77,12 @@ Re-running install or `chezmoi apply` is safe — every step is idempotent.
 Never edit a tracked file to customise your environment. Drop your
 personal stuff in these (untracked) files:
 
-| Concern                          | File                              |
-| -------------------------------- | --------------------------------- |
-| Personal zsh aliases / functions | `~/.config/zsh/local.zsh`         |
-| Git identity / signing key       | `~/.gitconfig.local`              |
-| Git identity for `~/work/*`      | `~/.gitconfig.work`               |
+| Concern                            | File                                              |
+| ---------------------------------- | ------------------------------------------------- |
+| Personal zsh aliases / functions   | `~/.config/zsh/local.zsh`                         |
+| Personal pwsh aliases / functions  | `$HOME\Documents\PowerShell\local.ps1`            |
+| Git identity / signing key         | `~/.gitconfig.local`                              |
+| Git identity for `~/work/*`        | `~/.gitconfig.work`                               |
 
 ---
 
@@ -99,7 +107,8 @@ dotfiles/
 │   ├── .chezmoi.toml.tmpl               fallback prompts
 │   ├── .chezmoiignore                   per-OS gating
 │   ├── .chezmoiscripts/                 run_onchange_* hooks
-│   ├── dot_config/{zsh,nvim,wezterm,…}  ~/.config/...
+│   ├── dot_config/{zsh,nvim,wezterm,…}  ~/.config/... (Linux + WSL)
+│   ├── Documents/PowerShell/            $PROFILE for pwsh / PS 5.1 (Windows)
 │   ├── dot_claude/                      ~/.claude/
 │   ├── dot_local/bin/                   dotfiles-update / dotfiles-doctor
 │   └── dot_gitconfig.tmpl               ~/.gitconfig
