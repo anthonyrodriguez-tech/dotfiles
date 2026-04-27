@@ -10,7 +10,7 @@ ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
 if [ "${1:-}" != "--force" ] && [ "${1:-}" != "-f" ]; then
-    printf 'Remove chezmoi state, claude, and omp from $HOME? (y/N): '
+    printf 'Remove chezmoi state, claude, and omp from ~ ? (y/N): '
     read -r reply
     case "$reply" in
         y|Y) ;;
