@@ -1,19 +1,7 @@
-# ─────────────────────────────────────────────────────────────────────────
-# WHAT  : git config, templated per machine by chezmoi.
-# WHERE : home/dot_gitconfig.tmpl  →  ~/.gitconfig
-# WHY   : one file for all OSes; identity + delta pager + sensible defaults.
-#         Work email / GPG / anything machine-specific goes in
-#         ~/.gitconfig.local (included at the bottom, never tracked).
-#         Emails for repos under ~/work/ get overridden by the includeIf
-#         section — corporate laptops (safran) typically clone work repos
-#         there.
-#
-# autocrlf:
-#   • Windows native → `true`   (CRLF on checkout, LF in the repo).
-#   • Linux          → `input`  (never modify on checkout, LF on commit).
-#   • MSYS2 on Windows reports .chezmoi.os = "windows" to chezmoi, which
-#     is the behaviour we want since git.exe is the native build anyway.
-# ─────────────────────────────────────────────────────────────────────────
+# ~/.gitconfig — templated by chezmoi. Identity + delta pager + sensible
+# defaults. Per-machine bits (GPG key, signing) go in ~/.gitconfig.local
+# (sourced last, never tracked). Repos under ~/work/ get the work identity
+# from ~/.gitconfig.work via the includeIf below.
 
 [user]
     name  = {{ .name  | quote }}

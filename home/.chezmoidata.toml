@@ -1,184 +1,30 @@
-# ─────────────────────────────────────────────────────────────────────────
-# WHAT  : repo-side defaults that every chezmoi template can read.
-# WHERE : home/.chezmoidata.toml  (chezmoi loads automatically, source-side)
-# WHY   :
-#   * `editors_available` / `tools_available` drive the gum TUI: the user
-#     ticks among these labels.
-#   * `packages.<tool>.<os>` is THE matrix the install hook looks up.
-#     Missing OS key = tool unsupported on that OS (TUI hides the option).
-#   * Per-machine choices (.editors, .tools, .name, .email, .profile)
-#     come from ~/.config/chezmoi/chezmoi.toml written by `tui.sh`. Those
-#     values OVERRIDE anything declared here.
-# ─────────────────────────────────────────────────────────────────────────
+# Stack KISS — installé par run_onchange_10 selon l'OS détecté.
+# Outils hors PM (claude, omp) gérés directement par l'install hook.
 
-# ── Defaults for per-machine arrays ──────────────────────────────────────
-# tui.sh writes the user's actual selections into chezmoi.toml on bootstrap.
-# These defaults exist so templates can render before tui.sh ever ran (e.g.
-# `chezmoi diff` on a freshly-cloned source dir without a chezmoi.toml).
-editors = []
-tools   = []
-
-# ── VSCode extensions installed by run_onchange_20 ───────────────────────
-# Top-level array — MUST stay before any [section] block (TOML table
-# headers swallow every subsequent key into themselves; if this list
-# moves below `[mise_plugins]` it silently becomes
-# `mise_plugins.vscode_extensions` and the template can't find it).
-# The list is ignored entirely if "code" is not in `.editors`.
-vscode_extensions = [
-    "ms-vscode.PowerShell",
-    "ms-azuretools.vscode-docker",
-    "ms-dotnettools.csdevkit",
-    "hashicorp.terraform",
-    "redhat.vscode-yaml",
-    "esbenp.prettier-vscode",
-    "eamodio.gitlens",
-    "vscodevim.vim",
+[packages]
+arch = [
+    "zsh", "git", "curl", "base-devel", "unzip",
+    "wezterm", "neovim", "lazygit", "starship",
+    "zoxide", "eza", "fzf", "ripgrep", "fd", "bat", "git-delta",
+    "github-cli", "jq", "yq",
+    "ttf-jetbrains-mono-nerd",
+    "zsh-autosuggestions", "zsh-syntax-highlighting",
+    "xclip", "wl-clipboard",
 ]
 
-# ── Catalogue presented by the TUI ───────────────────────────────────────
-[editors_available]
-nvim = "Neovim (LazyVim)"
-code = "Visual Studio Code"
-zed  = "Zed"
+ubuntu = [
+    "zsh", "git", "curl", "ca-certificates", "build-essential", "unzip",
+    "neovim", "fzf", "ripgrep", "fd-find", "bat",
+    "jq", "zoxide",
+    "zsh-autosuggestions", "zsh-syntax-highlighting",
+    "xclip", "wl-clipboard",
+]
 
-[tools_available]
-# Runtimes & desktop tooling
-docker     = "Docker Engine + CLI"
-dotnet     = ".NET SDK"
-node       = "Node.js (via mise)"
-# Kubernetes & GitOps
-kubectl    = "kubectl — Kubernetes CLI"
-helm       = "Helm — K8s package manager"
-k9s        = "k9s — terminal UI for K8s"
-kustomize  = "Kustomize — K8s manifest overlays"
-argocd     = "Argo CD CLI"
-# Infrastructure as Code
-terraform  = "Terraform"
-terragrunt = "Terragrunt"
-ansible    = "Ansible"
-# Secrets & encryption
-sops       = "SOPS — encrypted config files"
-age        = "age — modern file encryption"
-# Cloud SDKs
-aws        = "AWS CLI v2"
-az         = "Azure CLI"
-gcloud     = "Google Cloud SDK"
-
-# ── Tool → OS package matrix ─────────────────────────────────────────────
-# Key absent for an OS  ⇒  unsupported there. Value can be empty string to
-# mean "skip via a special-case path" (e.g. installer script handled in
-# the run_onchange hook).
-[packages.code]
-arch    = "code"
-ubuntu  = "code"
-windows = "vscode"
-
-[packages.zed]
-arch    = "zed"
-ubuntu  = "zed"
-# (no windows — Zed has no stable Windows build yet)
-
-[packages.docker]
-arch    = "docker"
-ubuntu  = "docker.io"
-windows = "docker-desktop"
-
-[packages.dotnet]
-arch    = "dotnet-sdk"
-ubuntu  = "dotnet-sdk-8.0"
-windows = "dotnet-sdk"
-
-[packages.node]
-# All three OSes go through mise (already installed by bootstrap), the
-# install hook calls `mise use --global node@lts` instead of a PM. Empty
-# strings are placeholders so the TUI lists the option for every OS.
-arch    = ""
-ubuntu  = ""
-windows = ""
-
-# ── Kubernetes & GitOps ──────────────────────────────────────────────────
-[packages.kubectl]
-arch    = "kubectl"
-ubuntu  = ""        # apt has no kubectl; mise plugin handles it
-windows = "kubectl"
-
-[packages.helm]
-arch    = "helm"
-ubuntu  = ""        # mise plugin
-windows = "helm"
-
-[packages.k9s]
-arch    = "k9s"
-ubuntu  = ""        # mise plugin
-windows = "k9s"
-
-[packages.kustomize]
-arch    = "kustomize"
-ubuntu  = ""        # mise plugin
-windows = "kustomize"
-
-[packages.argocd]
-arch    = "argocd"
-ubuntu  = ""        # mise plugin (argocd-cli)
-windows = "argocd"
-
-# ── Infrastructure as Code ───────────────────────────────────────────────
-[packages.terraform]
-arch    = "terraform"
-ubuntu  = ""        # mise plugin
-windows = "terraform"
-
-[packages.terragrunt]
-arch    = ""        # AUR only — mise plugin recommended
-ubuntu  = ""
-windows = "terragrunt"
-
-[packages.ansible]
-arch    = "ansible"
-ubuntu  = "ansible"
-windows = ""        # ansible control node on Windows is unusual
-
-# ── Secrets & encryption ─────────────────────────────────────────────────
-[packages.sops]
-arch    = "sops"
-ubuntu  = "sops"    # ubuntu 24.04+, falls back to mise on older
-windows = "sops"
-
-[packages.age]
-arch    = "age"
-ubuntu  = "age"
-windows = "age"
-
-# ── Cloud SDKs ───────────────────────────────────────────────────────────
-[packages.aws]
-arch    = ""        # AUR (aws-cli-v2) — use mise instead
-ubuntu  = ""        # mise plugin (awscli)
-windows = "aws"
-
-[packages.az]
-arch    = ""        # AUR — use mise (azure-cli)
-ubuntu  = ""        # MS-repo install — mise plugin instead
-windows = "azure-cli"
-
-[packages.gcloud]
-arch    = ""        # AUR (google-cloud-sdk) — mise plugin (gcloud-sdk)
-ubuntu  = ""
-windows = "gcloud"
-
-# ── mise fallback for tools without a vanilla PM package ─────────────────
-# When packages.<tool>.<os> is empty, the install hook checks this map and
-# runs `mise use --global <plugin>@latest` instead. Tools NOT in this map
-# fall through with a warning: "no install path on this OS".
-[mise_plugins]
-kubectl    = "kubectl@latest"
-helm       = "helm@latest"
-k9s        = "k9s@latest"
-kustomize  = "kustomize@latest"
-argocd     = "argocd@latest"
-terraform  = "terraform@latest"
-terragrunt = "terragrunt@latest"
-sops       = "sops@latest"
-age        = "age@latest"
-aws        = "awscli@latest"
-az         = "azure-cli@latest"
-gcloud     = "gcloud@latest"
+# WezTerm, lazygit, eza, starship, delta, gh n'ont pas de package apt fiable
+# sur les LTS récentes — installés via leur installeur officiel par le hook.
+windows = [
+    "git", "wezterm", "neovim", "lazygit", "starship",
+    "zoxide", "eza", "fzf", "ripgrep", "fd", "bat", "delta",
+    "gh", "jq", "yq",
+    "JetBrainsMono-NF",
+]

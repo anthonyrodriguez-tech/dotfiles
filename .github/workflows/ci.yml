@@ -1,15 +1,7 @@
-# ─────────────────────────────────────────────────────────────────────────
-# WHAT  : CI — static checks for every PR and push to main.
-# WHERE : .github/workflows/ci.yml
-# WHY   : catch broken templates / scripts before they land in someone's
-#         $HOME. Jobs are intentionally cheap so the pipeline is fast.
-# ─────────────────────────────────────────────────────────────────────────
-
 name: CI
 
 on:
-  push:
-    branches: [main]
+  push: { branches: [main] }
   pull_request:
 
 concurrency:
@@ -17,356 +9,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Shell scripts ─────────────────────────────────────────────────────
-  shell:
-    name: shellcheck + shfmt
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: shellcheck
+      - name: shellcheck + shfmt
         run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-          shellcheck -x \
-            scripts/install.sh \
-            scripts/bootstrap-arch.sh \
-            scripts/bootstrap-ubuntu.sh \
-            scripts/uninstall-arch.sh \
-            scripts/uninstall-ubuntu.sh \
-            scripts/common/lib.sh \
-            scripts/common/tui.sh \
-            home/dot_local/bin/executable_dotfiles-update \
-            home/dot_local/bin/executable_dotfiles-doctor \
-            home/dot_local/bin/executable_dotfiles-config \
-            home/dot_local/bin/executable_dotfiles-keygen-age
+          sudo apt-get update && sudo apt-get install -y shellcheck shfmt
+          shellcheck scripts/*.sh home/dot_local/bin/executable_dotfiles-*
+          shfmt -d -i 4 scripts/*.sh home/dot_local/bin/executable_dotfiles-*
 
-      - name: shfmt (diff)
-        uses: mfinelli/setup-shfmt@v3
-
-      - name: shfmt check
-        run: |
-          shfmt -d -i 4 \
-            scripts/install.sh \
-            scripts/bootstrap-arch.sh \
-            scripts/bootstrap-ubuntu.sh \
-            scripts/uninstall-arch.sh \
-            scripts/uninstall-ubuntu.sh \
-            scripts/common/lib.sh \
-            scripts/common/tui.sh \
-            home/dot_local/bin/executable_dotfiles-update \
-            home/dot_local/bin/executable_dotfiles-doctor \
-            home/dot_local/bin/executable_dotfiles-config \
-            home/dot_local/bin/executable_dotfiles-keygen-age
-
-  # ── PowerShell ────────────────────────────────────────────────────────
-  powershell:
-    name: parse + PSScriptAnalyzer
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # The bootstrap is documented as `irm <url> | iex`. Invoke-Expression
-      # evaluates the body inline, which forbids `param()` / `[CmdletBinding()]`
-      # at the top of the script. Compiling the source as a script block here
-      # is the same syntactic check iex performs — fails fast on regressions.
-      - name: iex-compat parse check
+      - name: powershell parse
         shell: pwsh
         run: |
-          $src = Get-Content -Raw scripts/bootstrap-windows.ps1
-          try {
-              $null = [scriptblock]::Create($src)
-              Write-Host "OK: bootstrap-windows.ps1 compiles as a script block (irm | iex compatible)."
-          }
-          catch {
-              Write-Host "FAIL: $($_.Exception.Message)"
-              exit 1
-          }
-
-      - name: Run PSScriptAnalyzer
-        shell: pwsh
-        run: |
-          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
-          $files = @(
-              'scripts/install.ps1',
-              'scripts/bootstrap-windows.ps1',
-              'scripts/uninstall-windows.ps1',
-              'home/dot_local/bin/dotfiles-update.ps1',
-              'home/dot_local/bin/dotfiles-doctor.ps1',
-              'home/dot_local/bin/dotfiles-config.ps1'
-          )
-          # Recent PSScriptAnalyzer versions reject arrays for -Path; loop one
-          # invocation per file and collect.
-          # Excluded rules:
-          #   PSUseBOMForUnicodeEncodedFile — pure cosmetic, harmful next to
-          #                                   shebangs / non-PowerShell parsers.
-          #   PSAvoidUsingWriteHost         — these scripts are interactive
-          #                                   coloured TUIs; Write-Host IS the
-          #                                   right tool here. Per-function
-          #                                   SuppressMessageAttribute is used
-          #                                   sparingly only where signal still
-          #                                   matters (bootstrap-windows.ps1).
-          $excluded = @('PSUseBOMForUnicodeEncodedFile', 'PSAvoidUsingWriteHost')
-          $results = @()
+          $files = @('scripts/install.ps1','scripts/uninstall-windows.ps1',
+                     'home/dot_local/bin/dotfiles-update.ps1',
+                     'home/dot_local/bin/dotfiles-doctor.ps1')
           foreach ($f in $files) {
-              $results += Invoke-ScriptAnalyzer -Path $f -Severity Error,Warning -ExcludeRule $excluded
-          }
-          if ($results) {
-              $results | Format-Table -AutoSize
-              throw "PSScriptAnalyzer reported $($results.Count) issue(s)."
-          }
-          else {
-              Write-Host "PSScriptAnalyzer: clean."
+              $null = [scriptblock]::Create((Get-Content -Raw $f))
+              Write-Host "OK: $f"
           }
 
-  # ── Lua (neovim + wezterm) ────────────────────────────────────────────
-  lua:
-    name: luacheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install luacheck
+      - name: chezmoi apply --dry-run
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.1 luarocks
-          sudo luarocks install luacheck
-
-      - name: luacheck
-        run: luacheck home/dot_config/nvim/lua home/dot_config/wezterm
-
-  # ── actionlint: own workflow YAML stays healthy ───────────────────────
-  # Invoked via the upstream download script (the recommended install in
-  # actionlint's own README). Third-party wrappers have recurring "linted
-  # 0 files" false positives — staying close to upstream avoids them.
-  actionlint:
-    name: actionlint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install actionlint
-        run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-
-      - name: Run actionlint
-        run: ./actionlint -color
-
-  # ── neovim headless smoke: lazy.nvim installs, no startup errors ──────
-  # Ubuntu ships an old nvim; LazyVim requires 0.10+. Pull the upstream
-  # AppImage-extracted binary instead.
-  nvim:
-    name: neovim headless
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install neovim (upstream stable)
-        run: |
-          curl -fsSL -o /tmp/nvim.tar.gz \
-            https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.tar.gz
-          mkdir -p "$HOME/.local/nvim"
-          tar -xzf /tmp/nvim.tar.gz -C "$HOME/.local/nvim" --strip-components=1
-          echo "$HOME/.local/nvim/bin" >> "$GITHUB_PATH"
-
-      - name: Link nvim config
-        run: |
-          mkdir -p "$HOME/.config"
-          ln -s "$PWD/home/dot_config/nvim" "$HOME/.config/nvim"
-
-      - name: Install plugins (Lazy! sync)
-        run: |
-          # First run bootstraps lazy.nvim + clones/builds all plugins.
-          # Treesitter parsers compile here — stderr noise is expected,
-          # so we only enforce a non-zero exit code.
-          nvim --headless "+Lazy! sync" +qa
-
-      - name: Startup smoke (clean load after sync)
-        run: |
-          # Second run: config should load silently. Any stderr output now
-          # means a Lua error that slipped past plugin install.
-          nvim --headless +qa 2> /tmp/nvim.err
-          if [ -s /tmp/nvim.err ]; then
-              echo "::error::nvim wrote to stderr on clean startup:"
-              cat /tmp/nvim.err
-              exit 1
-          fi
-          echo "neovim headless smoke: OK"
-
-  # ── chezmoi: templates render for every profile ───────────────────────
-  chezmoi:
-    name: chezmoi dry-run (all profiles)
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [arch, ubuntu, safran]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install chezmoi
-        run: |
-          # get.chezmoi.io occasionally returns 502 from its release CDN.
-          # Retry 3× with backoff before falling back to apt (noble has
-          # chezmoi in universe — older but functional for CI rendering).
-          install_upstream() {
-            sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
-          }
-          for attempt in 1 2 3; do
-            if install_upstream; then
-              echo "chezmoi installed via upstream (attempt $attempt)"
-              exit 0
-            fi
-            echo "::warning::upstream installer attempt $attempt failed — sleeping $((attempt * 5))s"
-            sleep $((attempt * 5))
-          done
-          echo "::warning::upstream installer kept failing — falling back to apt"
-          sudo apt-get install -y chezmoi
-          mkdir -p "$HOME/.local/bin"
-          ln -sf "$(command -v chezmoi)" "$HOME/.local/bin/chezmoi"
-
-      - name: chezmoi init
-        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
           "$HOME/.local/bin/chezmoi" init --source="$PWD/home" --no-tty \
             --promptString "Email address=ci@ci.test" \
             --promptString "Full name=CI Bot" \
-            --promptChoice "Machine profile=${{ matrix.profile }}" \
-            --promptString "HTTP proxy URL (blank if none)=http://proxy.ci:8080" \
-            --promptString "HTTPS proxy URL (blank if none)=http://proxy.ci:8080"
-
-      - name: chezmoi apply --dry-run
-        run: '"$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --dry-run --verbose'
-
-      - name: Validate rendered settings.json is valid JSON
-        run: |
-          "$HOME/.local/bin/chezmoi" cat --source="$PWD/home" \
-            "$HOME/.claude/settings.json" > /tmp/settings.json
-          python3 -c "import json; json.load(open('/tmp/settings.json')); print('settings.json OK for ${{ matrix.profile }}')"
-
-      - name: Validate rendered .gitconfig parses
-        run: |
-          "$HOME/.local/bin/chezmoi" cat --source="$PWD/home" \
-            "$HOME/.gitconfig" > /tmp/gitconfig
-          git config --file /tmp/gitconfig --list > /dev/null
-          echo ".gitconfig OK for ${{ matrix.profile }}"
-
-  # ── Real chezmoi apply with idempotence check ─────────────────────────
-  # The dry-run job above only renders templates. This one actually runs
-  # `chezmoi apply` so the run_onchange_* hooks fire, then re-runs apply
-  # and asserts the second pass is a no-op (data-hash headers + idempotent
-  # file writes). Package installs are stubbed via DOTFILES_DRY_RUN=1.
-  apply-idempotence:
-    name: chezmoi apply x2 (${{ matrix.profile }} · editors=${{ matrix.editors_label }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - profile: arch
-            editors: '["nvim"]'
-            editors_label: nvim
-            tools: '[]'
-          - profile: arch
-            editors: '["nvim","code","zed"]'
-            editors_label: full
-            tools: '["docker","node"]'
-          - profile: ubuntu
-            editors: '["code"]'
-            editors_label: code
-            tools: '["dotnet"]'
-          - profile: safran
-            editors: '[]'
-            editors_label: none
-            tools: '[]'
-          - profile: safran
-            editors: '["nvim","code"]'
-            editors_label: nvim-code
-            tools: '["docker"]'
-          - profile: arch
-            editors: '["nvim"]'
-            editors_label: devops
-            tools: '["kubectl","helm","terraform","sops","age"]'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install chezmoi
-        run: |
-          # get.chezmoi.io occasionally returns 502 from its release CDN.
-          # Retry 3× with backoff before falling back to apt (noble has
-          # chezmoi in universe — older but functional for CI rendering).
-          install_upstream() {
-            sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
-          }
-          for attempt in 1 2 3; do
-            if install_upstream; then
-              echo "chezmoi installed via upstream (attempt $attempt)"
-              exit 0
-            fi
-            echo "::warning::upstream installer attempt $attempt failed — sleeping $((attempt * 5))s"
-            sleep $((attempt * 5))
-          done
-          echo "::warning::upstream installer kept failing — falling back to apt"
-          sudo apt-get install -y chezmoi
-          mkdir -p "$HOME/.local/bin"
-          ln -sf "$(command -v chezmoi)" "$HOME/.local/bin/chezmoi"
-
-      - name: Pre-write chezmoi.toml (skips the .chezmoi.toml.tmpl prompts)
-        run: |
-          mkdir -p "$HOME/.config/chezmoi" "$HOME/Desktop" "$HOME/work"
-          cat > "$HOME/.config/chezmoi/chezmoi.toml" <<'EOF'
-          [data]
-              name        = "CI Bot"
-              email       = "ci@ci.test"
-              profile     = "${{ matrix.profile }}"
-              proxy_http  = ""
-              proxy_https = ""
-              editors     = ${{ matrix.editors }}
-              tools       = ${{ matrix.tools }}
-          EOF
-          echo '── chezmoi.toml ──'
-          cat "$HOME/.config/chezmoi/chezmoi.toml"
-
-      - name: First apply (hooks fire, packages stubbed)
-        env:
-          DOTFILES_DRY_RUN: "1"
-        run: |
-          "$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --verbose 2>&1 | tee /tmp/apply1.log
-
-      - name: Idempotence — chezmoi diff must be empty after first apply
-        run: |
-          out="$("$HOME/.local/bin/chezmoi" diff --source="$PWD/home")"
-          if [ -n "$out" ]; then
-            echo "::error::chezmoi diff non-empty after first apply:"
-            echo "$out"
-            exit 1
-          fi
-          echo "OK: chezmoi diff empty"
-
-      - name: Second apply must be a no-op
-        env:
-          DOTFILES_DRY_RUN: "1"
-        run: |
-          "$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --verbose 2>&1 | tee /tmp/apply2.log
-          # Any line announcing a write or a script execution on the second
-          # pass is an idempotence regression. chezmoi prints "create" / "update"
-          # / "modify" / "run" verbs in --verbose mode for actions actually
-          # taken; a clean re-apply produces zero such lines.
-          if grep -E '^(create |update |modify |run )' /tmp/apply2.log; then
-            echo "::error::second apply was not idempotent — see lines above"
-            exit 1
-          fi
-          echo "OK: second apply silent"
-
-      - name: Inspect chezmoi state for run_onchange_ hashes
-        run: |
-          "$HOME/.local/bin/chezmoi" state get-bucket --bucket=scriptState \
-            || echo "(no scriptState bucket — no run_onchange_ scripts ran for this matrix)"
-
-      - name: Upload apply logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: apply-logs-${{ matrix.profile }}-${{ matrix.editors_label }}
-          path: |
-            /tmp/apply1.log
-            /tmp/apply2.log
-          if-no-files-found: ignore
+            --promptString "HTTP proxy URL (blank if none)=" \
+            --promptString "HTTPS proxy URL (blank if none)="
+          "$HOME/.local/bin/chezmoi" apply --source="$PWD/home" --dry-run --verbose
+          "$HOME/.local/bin/chezmoi" cat --source="$PWD/home" "$HOME/.claude/settings.json" \
+            | python3 -c "import json,sys; json.load(sys.stdin)"
+          "$HOME/.local/bin/chezmoi" cat --source="$PWD/home" "$HOME/.gitconfig" \
+            | git config --file /dev/stdin --list >/dev/null

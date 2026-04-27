@@ -1,14 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────
-# WHAT  : Windows-native health check — verifies all expected binaries are
-#         on PATH, runs nvim + chezmoi diagnostics.
-# WHERE : home/dot_local/bin/dotfiles-doctor.ps1
-#         → ~/.local/bin/dotfiles-doctor.ps1  (deployed by chezmoi)
-# WHY   : Mirror of the POSIX dotfiles-doctor for users who live in pwsh.
-#
-# Usage:
-#   dotfiles-doctor.ps1            # full report
-#   dotfiles-doctor.ps1 -Quiet     # only show problems (good for CI)
-# ─────────────────────────────────────────────────────────────────────────
+# dotfiles-doctor.ps1 -- Windows health check.
 
 #Requires -Version 5.1
 [CmdletBinding()]
@@ -25,25 +15,19 @@ $warnCount = 0
 
 Write-Step 'binaries on PATH'
 $required = @('git', 'nvim', 'chezmoi', 'fzf', 'zoxide', 'rg', 'fd', 'bat', 'eza',
-              'starship', 'atuin', 'mise', 'lazygit', 'delta', 'jq', 'scoop')
+              'starship', 'lazygit', 'delta', 'jq', 'scoop')
 $optional = @('gh', 'yq', 'claude', 'omp', 'bun', 'wezterm-gui')
 
 foreach ($b in $required) {
     $cmd = Get-Command $b -ErrorAction SilentlyContinue
     if ($cmd) { Write-Ok "$b ($($cmd.Source))" }
-    else      { Write-Miss "$b — required"; $missCount++ }
+    else      { Write-Miss "$b -- required"; $missCount++ }
 }
-
 foreach ($b in $optional) {
     $cmd = Get-Command $b -ErrorAction SilentlyContinue
     if ($cmd) { Write-Ok "$b ($($cmd.Source))" }
-    else      { Write-Warn "$b — optional"; $warnCount++ }
+    else      { Write-Warn "$b -- optional"; $warnCount++ }
 }
-
-Write-Step 'MSYS2 layer'
-$msys2Bash = Join-Path $env:USERPROFILE 'scoop\apps\msys2\current\usr\bin\bash.exe'
-if (Test-Path $msys2Bash) { Write-Ok "MSYS2 bash present at $msys2Bash" }
-else { Write-Miss "MSYS2 bash missing — bootstrap-windows.ps1 not completed?"; $missCount++ }
 
 Write-Step 'local overrides'
 foreach ($f in @(
@@ -51,7 +35,6 @@ foreach ($f in @(
     (Join-Path $env:USERPROFILE '.gitconfig.work')
 )) {
     if (Test-Path $f) { Write-Ok "$f present" }
-    elseif (-not $Quiet) { Write-Host "       $f (not present)" }
 }
 
 if (Test-Cmd chezmoi) {
@@ -63,16 +46,13 @@ if (Test-Cmd nvim) {
     Write-Step 'nvim startup smoke'
     $errFile = Join-Path $env:TEMP 'dotfiles-doctor-nvim.err'
     nvim --headless +qa 2> $errFile
-    if (Test-Path $errFile) {
-        $stderr = Get-Content $errFile -Raw
-        if ($stderr) {
-            Write-Warn 'nvim wrote to stderr on startup:'
-            $stderr -split "`n" | ForEach-Object { Write-Host "         $_" }
-            $warnCount++
-        }
-        else { Write-Ok 'nvim starts cleanly' }
-        Remove-Item $errFile -ErrorAction SilentlyContinue
+    if ((Test-Path $errFile) -and (Get-Item $errFile).Length -gt 0) {
+        Write-Warn 'nvim wrote to stderr on startup:'
+        Get-Content $errFile | ForEach-Object { Write-Host "         $_" }
+        $warnCount++
     }
+    else { Write-Ok 'nvim starts cleanly' }
+    Remove-Item $errFile -ErrorAction SilentlyContinue
 }
 
 Write-Step 'summary'

@@ -23,7 +23,11 @@
       "Bash(command -v shellcheck)",
       "Bash(shellcheck -x scripts/common/tui.sh)",
       "Bash(bash -n scripts/install.sh scripts/uninstall-arch.sh scripts/uninstall-ubuntu.sh scripts/common/lib.sh scripts/common/tui.sh home/dot_local/bin/executable_dotfiles-update home/dot_local/bin/executable_dotfiles-doctor home/dot_local/bin/executable_dotfiles-keygen-age)",
-      "Bash(python3 -c \"import yaml,sys; yaml.safe_load\\(open\\('.github/workflows/bootstrap-windows-e2e.yml'\\)\\); print\\('YAML OK'\\)\")"
+      "Bash(python3 -c \"import yaml,sys; yaml.safe_load\\(open\\('.github/workflows/bootstrap-windows-e2e.yml'\\)\\); print\\('YAML OK'\\)\")",
+      "Bash(bash -n C:/Users/Tony/dotfiles/scripts/uninstall.sh)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-update)",
+      "Bash(bash -n C:/Users/Tony/dotfiles/home/dot_local/bin/executable_dotfiles-doctor)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

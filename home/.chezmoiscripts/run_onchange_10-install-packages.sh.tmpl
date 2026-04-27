@@ -1,79 +1,102 @@
-{{- /*
-  ─────────────────────────────────────────────────────────────────────────
-  WHAT  : install the packages the user ticked in the TUI for the current
-          OS. Driven by `.editors` + `.tools` (chosen via gum) and the
-          `[packages.*]` matrix in home/.chezmoidata.toml.
-  WHERE : home/.chezmoiscripts/run_onchange_10-install-packages.sh.tmpl
-  WHY   : `run_onchange_` re-runs whenever the rendered script changes.
-          Since the body interpolates the user's selections, any edit to
-          `.editors` / `.tools` (via `chezmoi edit-config` or a re-run of
-          tui.sh) yields a new script and triggers a fresh install pass.
-          Idempotent: every PM call uses --needed / -y / scoop's "already
-          installed" early-exit, and `pkg::installed_p` short-circuits
-          when the binary is already on PATH.
-  ─────────────────────────────────────────────────────────────────────────
-*/ -}}
+{{- /* Install des paquets pour Linux (Arch ou Ubuntu).
+       Skipped sur Windows via .chezmoiignore. Re-joué dès que .packages
+       change (data-hash dans le shebang). */ -}}
 #!/usr/bin/env bash
-# data-hash: {{ list .editors .tools .chezmoi.os .mise_plugins | toJson | sha256sum }}
+# data-hash: {{ list .packages .chezmoi.os | toJson | sha256sum }}
 
 set -euo pipefail
 
-LIB="{{ joinPath .chezmoi.workingTree "scripts" "common" "lib.sh" }}"
-if [ ! -f "$LIB" ]; then
-    echo "fatal: cannot find $LIB — repo layout broken?" >&2
-    exit 1
+step() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
+ok()   { printf '\033[32m  ✓ %s\033[0m\n' "$*"; }
+warn() { printf '\033[33m  ! %s\033[0m\n' "$*" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+SUDO=""
+[ "$(id -u)" -ne 0 ] && have sudo && SUDO="sudo"
+
+{{ if has .chezmoi.os (list "linux") -}}
+{{ if eq .chezmoi.osRelease.id "arch" -}}
+# ── Arch ─────────────────────────────────────────────────────────────────
+step "pacman -Sy"
+${SUDO} pacman -S --needed --noconfirm \
+{{- range $p := .packages.arch }} {{ $p }}{{ end }}
+{{ else if has .chezmoi.osRelease.id (list "ubuntu" "debian") -}}
+# ── Ubuntu/Debian ────────────────────────────────────────────────────────
+step "apt-get install"
+${SUDO} apt-get update
+${SUDO} apt-get install -y --no-install-recommends \
+{{- range $p := .packages.ubuntu }} {{ $p }}{{ end }}
+
+mkdir -p "${HOME}/.local/bin"
+export PATH="${HOME}/.local/bin:${PATH}"
+have fd  || { have fdfind  && ln -sf "$(command -v fdfind)"  "${HOME}/.local/bin/fd";  }
+have bat || { have batcat && ln -sf "$(command -v batcat) " "${HOME}/.local/bin/bat"; }
+
+# Outils non packagés (ou versions trop vieilles) → installeurs upstream.
+if ! have starship; then
+    step "starship (upstream)"
+    curl -fsSL https://starship.rs/install.sh | sh -s -- --yes --bin-dir "${HOME}/.local/bin"
 fi
-# shellcheck source=/dev/null
-. "$LIB"
+if ! have eza; then
+    step "eza (GitHub release)"
+    EZA_VER="$(curl -fsSL https://api.github.com/repos/eza-community/eza/releases/latest | jq -r .tag_name)"
+    curl -fsSL -o /tmp/eza.tar.gz \
+        "https://github.com/eza-community/eza/releases/download/${EZA_VER}/eza_x86_64-unknown-linux-gnu.tar.gz"
+    tar -xzf /tmp/eza.tar.gz -C "${HOME}/.local/bin" eza && rm -f /tmp/eza.tar.gz
+fi
+if ! have lazygit; then
+    step "lazygit (GitHub release)"
+    LG_VER="$(curl -fsSL https://api.github.com/repos/jesseduffield/lazygit/releases/latest | jq -r .tag_name | sed 's/v//')"
+    curl -fsSL -o /tmp/lazygit.tar.gz \
+        "https://github.com/jesseduffield/lazygit/releases/download/v${LG_VER}/lazygit_${LG_VER}_Linux_x86_64.tar.gz"
+    tar -xzf /tmp/lazygit.tar.gz -C "${HOME}/.local/bin" lazygit && rm -f /tmp/lazygit.tar.gz
+fi
+if ! have delta && [ -n "${SUDO}" ]; then
+    step "git-delta (.deb)"
+    DELTA_VER="$(curl -fsSL https://api.github.com/repos/dandavison/delta/releases/latest | jq -r .tag_name)"
+    curl -fsSL -o /tmp/delta.deb \
+        "https://github.com/dandavison/delta/releases/download/${DELTA_VER}/git-delta_${DELTA_VER}_amd64.deb"
+    ${SUDO} dpkg -i /tmp/delta.deb && rm -f /tmp/delta.deb
+fi
+if ! have gh && [ -n "${SUDO}" ]; then
+    step "gh (apt repo upstream)"
+    ${SUDO} mkdir -p -m 755 /etc/apt/keyrings
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | ${SUDO} tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+    ${SUDO} chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        | ${SUDO} tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+    ${SUDO} apt-get update && ${SUDO} apt-get install -y gh
+fi
+# WezTerm: pas dans apt sur LTS. AppImage upstream.
+if ! have wezterm; then
+    step "wezterm (AppImage)"
+    WT_VER="$(curl -fsSL https://api.github.com/repos/wez/wezterm/releases/latest | jq -r .tag_name)"
+    curl -fsSL -o "${HOME}/.local/bin/wezterm" \
+        "https://github.com/wez/wezterm/releases/download/${WT_VER}/WezTerm-${WT_VER}-Ubuntu22.04.AppImage" \
+        && chmod +x "${HOME}/.local/bin/wezterm"
+fi
+# JetBrains Mono Nerd Font.
+NERD_DIR="${HOME}/.local/share/fonts/JetBrainsMono"
+if [ ! -d "${NERD_DIR}" ]; then
+    step "JetBrainsMono Nerd Font"
+    mkdir -p "${NERD_DIR}"
+    curl -fsSL -o /tmp/jbmono.zip \
+        "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+    unzip -qo /tmp/jbmono.zip -d "${NERD_DIR}" && rm -f /tmp/jbmono.zip
+    fc-cache -f "${NERD_DIR}" >/dev/null 2>&1 || true
+fi
+{{ end -}}
+{{ end }}
 
-log::step "install packages for {{ .chezmoi.os }} (editors={{ .editors | toJson }}, tools={{ .tools | toJson }})"
-
-PACKAGES=()
-MISE_PLUGINS=()
-{{- $os := .chezmoi.os -}}
-{{- range $tool := concat .editors .tools }}
-  {{- /* 1. Try packages.<tool>.<os>. If non-empty → use the OS package
-         manager. If the entry exists but is empty (""), or if the entry
-         is missing entirely, fall through to mise.                       */ -}}
-  {{- $entry  := index $.packages $tool -}}
-  {{- $pkg    := "" -}}
-  {{- if $entry }}{{ $pkg = index $entry $os }}{{ end -}}
-  {{- if $pkg }}
-PACKAGES+=("{{ $pkg }}")  # {{ $tool }} via PM
-  {{- else -}}
-    {{- /* 2. mise plugin fallback.                                         */ -}}
-    {{- $mise := index $.mise_plugins $tool -}}
-    {{- if $mise }}
-MISE_PLUGINS+=("{{ $mise }}")  # {{ $tool }}
-    {{- else if eq $tool "node" }}
-MISE_PLUGINS+=("node@lts")  # node (special-cased)
-    {{- end -}}
-  {{- end -}}
-{{- end }}
-
-if [ "${#PACKAGES[@]}" -gt 0 ]; then
-    log::step "pkg::install_many ${PACKAGES[*]}"
-    pkg::install_many "${PACKAGES[@]}"
-else
-    log::ok "no PM packages to install for current selection on {{ .chezmoi.os }}"
+# ── Cross-distro: claude code + omp (upstream) ────────────────────────────
+if ! have claude; then
+    step "Claude Code"
+    curl -fsSL https://claude.ai/install.sh | bash || warn "claude install failed"
+fi
+if ! have omp; then
+    step "oh-my-pi (omp)"
+    curl -fsSL https://raw.githubusercontent.com/can1357/oh-my-pi/main/scripts/install.sh | sh || warn "omp install failed"
 fi
 
-# ── mise plugins (CLIs that vanilla PM doesn't ship reliably) ─────────────
-if [ "${#MISE_PLUGINS[@]}" -gt 0 ]; then
-    if has_cmd mise; then
-        log::step "mise use --global (${#MISE_PLUGINS[@]} tools)"
-        if [ "${DOTFILES_DRY_RUN:-0}" = "1" ]; then
-            log::ok "DRY_RUN: would mise install: ${MISE_PLUGINS[*]}"
-        else
-            for plugin in "${MISE_PLUGINS[@]}"; do
-                mise use --global "$plugin" >/dev/null \
-                    && log::ok "mise: $plugin" \
-                    || log::warn "mise: failed to install $plugin"
-            done
-        fi
-    else
-        log::warn "mise not installed — skipping ${#MISE_PLUGINS[@]} tool(s): ${MISE_PLUGINS[*]}"
-    fi
-fi
-
-log::ok "package install pass done"
+ok "package install pass done"

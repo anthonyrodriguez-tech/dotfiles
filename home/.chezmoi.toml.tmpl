@@ -1,40 +1,13 @@
-{{/*
-  ─────────────────────────────────────────────────────────────────────────
-  WHAT  : chezmoi config template, materialised on `chezmoi init` into
-          $XDG_CONFIG_HOME/chezmoi/chezmoi.toml on the target machine.
-  WHERE : home/.chezmoi.toml.tmpl  →  ~/.config/chezmoi/chezmoi.toml
-  WHY   : centralises the per-machine prompts so every other template can
-          read .email / .name / .profile without re-asking the user.
+{{- /* Fallback prompts pour `chezmoi init --apply` quand install.{sh,ps1}
+       n'a pas pré-écrit chezmoi.toml. Variants *Once = silent re-runs. */ -}}
 
-  Prompts use the `*Once` variants: chezmoi only asks if the value is
-  missing, so re-running `chezmoi init` on an already-provisioned machine
-  is silent and idempotent.
-
-  Profiles:
-    arch    → personal Arch Linux machine
-    ubuntu  → personal Ubuntu / Debian machine
-    safran  → Safran corporate Windows laptop (MSYS2, proxy, restricted)
-  ─────────────────────────────────────────────────────────────────────────
-*/ -}}
-
-{{- $email   := promptStringOnce . "email"   "Email address" -}}
-{{- $name    := promptStringOnce . "name"    "Full name" -}}
-{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "arch" "ubuntu" "safran") -}}
-
-{{/* Corporate-profile-only extras — resolved here so the rest of the
-     source tree can reference static `.proxy_http` etc. without having to
-     call prompt* helpers from inside every template (prompt* is only
-     available during `chezmoi init`). */ -}}
-{{- $proxyHttp  := "" -}}
-{{- $proxyHttps := "" -}}
-{{- if eq $profile "safran" -}}
-  {{- $proxyHttp  = promptStringOnce . "proxy_http"  "HTTP proxy URL (blank if none)" -}}
-  {{- $proxyHttps = promptStringOnce . "proxy_https" "HTTPS proxy URL (blank if none)" -}}
-{{- end -}}
+{{- $email      := promptStringOnce . "email"       "Email address" -}}
+{{- $name       := promptStringOnce . "name"        "Full name" -}}
+{{- $proxyHttp  := promptStringOnce . "proxy_http"  "HTTP proxy URL (blank if none)" -}}
+{{- $proxyHttps := promptStringOnce . "proxy_https" "HTTPS proxy URL (blank if none)" -}}
 
 [data]
     email       = {{ $email      | quote }}
     name        = {{ $name       | quote }}
-    profile     = {{ $profile    | quote }}
     proxy_http  = {{ $proxyHttp  | quote }}
     proxy_https = {{ $proxyHttps | quote }}
