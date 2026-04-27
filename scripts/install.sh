@@ -37,7 +37,8 @@ ok "distro: ${DISTRO}"
 # ── 2. Proxy / identity prompts (skipped if already set in env) ───────────
 read_default() {
     local label="$1" def="${2:-}" resp=""
-    if [ -n "$def" ]; then printf '%s [%s]: ' "$label" "$def" >&2
+    if [ -n "$def" ]; then
+        printf '%s [%s]: ' "$label" "$def" >&2
     else printf '%s: ' "$label" >&2; fi
     IFS= read -r resp || true
     [ -z "$resp" ] && resp="$def"
@@ -88,7 +89,7 @@ fi
 
 # ── 5. Pre-write chezmoi.toml so init does not prompt ─────────────────────
 mkdir -p "${HOME}/.config/chezmoi"
-cat > "${HOME}/.config/chezmoi/chezmoi.toml" <<EOF
+cat >"${HOME}/.config/chezmoi/chezmoi.toml" <<EOF
 [data]
     name        = "${NAME}"
     email       = "${EMAIL}"
@@ -103,8 +104,8 @@ chezmoi init --apply "${REPO_URL}"
 # ── 7. Default shell → zsh ────────────────────────────────────────────────
 ZSH_PATH="$(command -v zsh || true)"
 if [ -n "$ZSH_PATH" ] && [ "${SHELL:-}" != "$ZSH_PATH" ]; then
-    [ -n "$SUDO" ] && ! grep -q "^${ZSH_PATH}$" /etc/shells \
-        && echo "$ZSH_PATH" | ${SUDO} tee -a /etc/shells >/dev/null
+    [ -n "$SUDO" ] && ! grep -q "^${ZSH_PATH}$" /etc/shells &&
+        echo "$ZSH_PATH" | ${SUDO} tee -a /etc/shells >/dev/null
     chsh -s "$ZSH_PATH" || warn "chsh failed — set default shell manually"
 fi
 
